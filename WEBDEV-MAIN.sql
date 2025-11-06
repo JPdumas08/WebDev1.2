@@ -25,3 +25,19 @@ INSERT INTO products (product_name, product_price, product_image, category) VALU
 ('Tied Knot Earrings', 1600.00, 'image/eartied.jpg', 'Earrings'),
 ('Pearl Bracelet', 1600.00, 'image/pearlbrace.jpg', 'Bracelet'),
 ('Tied Knot Bracelet', 1800.00, 'image/tiednotbrace.jpg', 'Bracelet');
+
+CREATE TABLE cart (
+    cart_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE cart_items (
+    cart_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    cart_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    price DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (cart_id) REFERENCES cart(cart_id) ON DELETE CASCADE
+);

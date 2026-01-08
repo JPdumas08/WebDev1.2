@@ -530,6 +530,27 @@ $(document).ready(function() {
       });
     });
   });
+
+  // Load current wishlist state on page load
+  <?php if (!empty($_SESSION['user_id'])): ?>
+  fetch('get_wishlist.php')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.wishlist) {
+        const wishlistIds = data.wishlist;
+        document.querySelectorAll('.wishlist-btn').forEach(btn => {
+          const productId = parseInt(btn.dataset.productId);
+          if (wishlistIds.includes(productId)) {
+            const icon = btn.querySelector('.wishlist-icon');
+            icon.textContent = '♥';
+            icon.style.color = '#e74c3c';
+            btn.style.background = 'rgba(231, 76, 60, 0.15)';
+          }
+        });
+      }
+    })
+    .catch(error => console.error('Error loading wishlist:', error));
+  <?php endif; ?>
 });
 </script>
 

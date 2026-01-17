@@ -143,23 +143,54 @@ $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="row mt-4">
                             <div class="col-md-8"></div>
                             <div class="col-md-4">
-                                <div class="order-summary p-3">
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Subtotal:</span>
-                                        <span>₱<?php echo number_format($order['subtotal'], 2); ?></span>
+                                <div class="order-summary-premium">
+                                    <div class="order-summary-header">
+                                        <div class="order-summary-icon">
+                                            <i class="fas fa-receipt"></i>
+                                        </div>
+                                        <h4 class="order-summary-title">Order Summary</h4>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Shipping:</span>
-                                        <span>₱<?php echo number_format($order['shipping_cost'], 2); ?></span>
+                                    
+                                    <div class="order-summary-row">
+                                        <div class="order-summary-label">
+                                            <div class="order-summary-label-icon">
+                                                <i class="fas fa-shopping-cart"></i>
+                                            </div>
+                                            Subtotal
+                                        </div>
+                                        <div class="order-summary-value">₱<?php echo number_format($order['subtotal'], 2); ?></div>
                                     </div>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Tax:</span>
-                                        <span>₱<?php echo number_format($order['tax'], 2); ?></span>
+                                    
+                                    <div class="order-summary-row">
+                                        <div class="order-summary-label">
+                                            <div class="order-summary-label-icon">
+                                                <i class="fas fa-truck"></i>
+                                            </div>
+                                            Shipping
+                                        </div>
+                                        <div class="order-summary-value">₱<?php echo number_format($order['shipping_cost'], 2); ?></div>
                                     </div>
-                                    <hr>
-                                    <div class="d-flex justify-content-between fw-bold">
-                                        <span>Total:</span>
-                                        <span>₱<?php echo number_format($order['total_amount'], 2); ?></span>
+                                    
+                                    <div class="order-summary-row">
+                                        <div class="order-summary-label">
+                                            <div class="order-summary-label-icon">
+                                                <i class="fas fa-calculator"></i>
+                                            </div>
+                                            Tax
+                                        </div>
+                                        <div class="order-summary-value">₱<?php echo number_format($order['tax'], 2); ?></div>
+                                    </div>
+                                    
+                                    <div class="order-summary-divider"></div>
+                                    
+                                    <div class="order-summary-row total-row">
+                                        <div class="order-summary-label">
+                                            <div class="order-summary-label-icon">
+                                                <i class="fas fa-crown"></i>
+                                            </div>
+                                            Total Amount
+                                        </div>
+                                        <div class="order-summary-value">₱<?php echo number_format($order['total_amount'], 2); ?></div>
                                     </div>
                                 </div>
                             </div>

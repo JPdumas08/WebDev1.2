@@ -50,7 +50,20 @@ try {
     $u = $pdo->prepare('UPDATE cart_items SET quantity = :quantity WHERE cart_item_id = :item_id');
     $u->execute([':quantity' => $useQty, ':item_id' => $item_id]);
 
-    echo json_encode(['success' => true, 'item_id' => $item_id, 'quantity' => $useQty]);
+    // Get updated price and calculate line total
+    $priceStmt = $pdo->prepare('SELECT ci.price FROM cart_items ci WHERE ci.cart_item_id = :item_id');
+    $priceStmt->execute([':item_id' => $item_id]);
+    $priceRow = $priceStmt->fetch();
+    $price = $priceRow ? (float)$priceRow['price'] : 0;
+    $lineTotal = $price * $useQty;
+
+    echo json_encode([
+        'success' => true, 
+        'item_id' => $item_id, 
+        'quantity' => $useQty,
+        'price' => $price,
+        'line_total' => $lineTotal
+    ]);
     exit;
 
 } catch (Exception $e) {

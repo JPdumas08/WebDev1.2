@@ -82,6 +82,122 @@ $total = $subtotal + $shipping;
     <title>Checkout - Jewelry Store</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .order-summary-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .order-summary-card .card-body {
+            padding: 0 !important;
+            display: flex;
+            flex-direction: column;
+        }
+        .order-summary-card .card-body > * {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        .order-summary-card .order-items-container {
+            padding: 1rem !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.875rem !important;
+            margin: 0 !important;
+            background: #faf9f7 !important;
+        }
+        .order-summary-card .order-items-container > div {
+            margin: 0 !important;
+            padding: 1.125rem !important;
+            background: #ffffff !important;
+            border-radius: 10px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 1rem !important;
+            border: 1px solid #e8e5e0 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+            transition: all 0.2s ease !important;
+        }
+        .order-summary-card .order-items-container > div[style*="display: none"] {
+            display: none !important;
+            height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            overflow: hidden !important;
+        }
+        .order-summary-card .order-items-container > div:hover {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+            border-color: #d4cfc7 !important;
+        }
+        .order-summary-card .order-item-left {
+            display: flex !important;
+            gap: 1rem !important;
+            align-items: center !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+        .order-summary-card .order-items-container img {
+            width: 68px !important;
+            height: 68px !important;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #e8e5e0;
+            flex-shrink: 0;
+            background: #fdfcfb;
+        }
+        .order-summary-card .order-item-info {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.45rem !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+        .order-summary-card .order-items-container h6 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            margin: 0 !important;
+            color: #2d2a27;
+            text-align: left !important;
+            line-height: 1.3;
+            letter-spacing: -0.01em;
+        }
+        .order-summary-card .order-item-qty {
+            font-size: 0.8125rem !important;
+            color: #7a736a !important;
+            font-weight: 400 !important;
+            letter-spacing: 0.01em !important;
+        }
+        .order-summary-card .order-items-container .item-price {
+            font-weight: 700;
+            color: #a67c52;
+            font-size: 1.0625rem;
+            text-align: right;
+            flex-shrink: 0;
+            letter-spacing: -0.02em;
+        }
+        .order-summary-card .order-totals {
+            padding: 1.25rem 1rem 1rem !important;
+            border-top: 2px solid #e8e5e0 !important;
+            margin-top: auto !important;
+            background: #ffffff !important;
+        }
+        
+        /* Order Summary Card Styling */
+        .order-summary-card .card-header {
+            background: #ffffff !important;
+            border-bottom: 2px solid #e8e5e0 !important;
+            padding: 1.125rem 1.25rem !important;
+        }
+        
+        .order-summary-card .card-header h5 {
+            color: #2d2a27 !important;
+            font-weight: 600 !important;
+            font-size: 1.125rem !important;
+            letter-spacing: -0.01em !important;
+        }
+    </style>
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
@@ -192,53 +308,54 @@ $total = $subtotal + $shipping;
             
             <!-- Order Summary -->
             <div class="col-md-4">
-                <div class="card">
+                <div class="card order-summary-card">
                     <div class="card-header">
                         <h5 class="mb-0">Order Summary</h5>
                     </div>
                     <div class="card-body">
                         <?php if (count($cart_items) > 0): ?>
-                            <?php foreach ($cart_items as $item): ?>
-                                <div class="d-flex justify-content-between align-items-center mb-3" data-item-id="<?php echo $item['item_id']; ?>">
-                                    <div class="d-flex align-items-center">
-                                        <img src="<?php echo $item['product_image']; ?>" alt="<?php echo $item['product_name']; ?>" 
-                                             class="me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                        <div>
-                                            <h6 class="mb-0"><?php echo $item['product_name']; ?></h6>
-                                            <small class="text-muted">Qty: <?php echo $item['quantity']; ?></small>
+                            <div class="order-items-container">
+                                <?php foreach ($cart_items as $item): ?>
+                                    <div data-item-id="<?php echo $item['item_id']; ?>" data-product-id="<?php echo $item['product_id']; ?>">
+                                        <div class="order-item-left">
+                                            <img src="<?php echo $item['product_image']; ?>" alt="<?php echo $item['product_name']; ?>">
+                                            <div class="order-item-info">
+                                                <h6><?php echo $item['product_name']; ?></h6>
+                                                <span class="order-item-qty">Qty: <?php echo $item['quantity']; ?></span>
+                                            </div>
                                         </div>
+                                        <span class="item-price">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
                                     </div>
-                                    <span class="item-price">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                            
+                            <div class="order-totals">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span id="orderSubtotal">₱<?php echo number_format($subtotal, 2); ?></span>
                                 </div>
-                            <?php endforeach; ?>
-                            
-                            <hr>
-                            
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Subtotal:</span>
-                                <span id="orderSubtotal">₱<?php echo number_format($subtotal, 2); ?></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Shipping:</span>
-                                <span id="orderShipping">₱<?php echo number_format($shipping, 2); ?></span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-3">
-                                <span>Tax:</span>
-                                <span>₱0.00</span>
-                            </div>
-                            <div class="d-flex justify-content-between fw-bold">
-                                <span>Total:</span>
-                                <span id="orderTotal">₱<?php echo number_format($total, 2); ?></span>
-                            </div>
-                            
-                            <button type="submit" form="checkoutForm" class="btn btn-primary w-100 mt-3">
-                                Place Order
-                            </button>
-                            
-                            <div class="text-center mt-3">
-                                <a href="cart.php" class="text-decoration-none">
-                                    <small>← Back to Cart</small>
-                                </a>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Shipping:</span>
+                                    <span id="orderShipping">₱<?php echo number_format($shipping, 2); ?></span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span>Tax:</span>
+                                    <span>₱0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between fw-bold mb-3">
+                                    <span>Total:</span>
+                                    <span id="orderTotal">₱<?php echo number_format($total, 2); ?></span>
+                                </div>
+                                
+                                <button type="submit" form="checkoutForm" class="btn btn-primary w-100">
+                                    Place Order
+                                </button>
+                                
+                                <div class="text-center mt-3">
+                                    <a href="cart.php" class="text-decoration-none">
+                                        <small>← Back to Cart</small>
+                                    </a>
+                                </div>
                             </div>
                         <?php else: ?>
                             <p class="text-center">Your cart is empty.</p>
@@ -256,31 +373,143 @@ $total = $subtotal + $shipping;
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Function to recalculate Order Summary from current DOM state
+        function recalculateOrderSummary() {
+            const selectedItemsJson = sessionStorage.getItem('selectedCartItems');
+            const buyNowProductId = sessionStorage.getItem('buyNowProductId');
+            
+            if (!selectedItemsJson && !buyNowProductId) {
+                return;
+            }
+            
+            // Fetch updated cart data from server
+            fetch('get_cart.php')
+                .then(response => response.json())
+                .then(cartData => {
+                    if (!cartData || !cartData.items) {
+                        console.error('Invalid cart data received');
+                        return;
+                    }
+                    
+                    let filterMode = 'itemId';
+                    let selectedItems = [];
+                    
+                    if (buyNowProductId) {
+                        filterMode = 'productId';
+                        selectedItems = [parseInt(buyNowProductId)];
+                    } else if (selectedItemsJson) {
+                        filterMode = 'itemId';
+                        selectedItems = JSON.parse(selectedItemsJson);
+                    }
+                    
+                    let selectedSubtotal = 0;
+                    const itemElements = document.querySelectorAll('[data-item-id]');
+                    
+                    itemElements.forEach(element => {
+                        const itemId = parseInt(element.getAttribute('data-item-id'));
+                        const productId = parseInt(element.getAttribute('data-product-id'));
+                        
+                        let shouldShow = false;
+                        let updatedItem = null;
+                        
+                        if (filterMode === 'productId') {
+                            shouldShow = selectedItems.includes(productId);
+                            updatedItem = cartData.items.find(item => parseInt(item.product_id) === productId);
+                        } else {
+                            shouldShow = selectedItems.includes(itemId);
+                            updatedItem = cartData.items.find(item => parseInt(item.item_id) === itemId);
+                        }
+                        
+                        if (shouldShow && updatedItem) {
+                            // Update quantity display
+                            const qtyElement = element.querySelector('.order-item-qty');
+                            if (qtyElement) {
+                                qtyElement.textContent = 'Qty: ' + updatedItem.quantity;
+                            }
+                            
+                            // Calculate and update price
+                            const itemTotal = parseFloat(updatedItem.price) * parseInt(updatedItem.quantity);
+                            const priceElement = element.querySelector('.item-price');
+                            if (priceElement) {
+                                priceElement.textContent = '₱' + itemTotal.toFixed(2);
+                                selectedSubtotal += itemTotal;
+                            }
+                        }
+                    });
+                    
+                    // Update totals
+                    const shipping = selectedSubtotal > 0 ? 150 : 0;
+                    const total = selectedSubtotal + shipping;
+                    
+                    const subtotalEl = document.getElementById('orderSubtotal');
+                    const shippingEl = document.getElementById('orderShipping');
+                    const totalEl = document.getElementById('orderTotal');
+                    const gcashAmountEl = document.getElementById('gcashAmount');
+                    
+                    if (subtotalEl) subtotalEl.textContent = '₱' + selectedSubtotal.toFixed(2);
+                    if (shippingEl) shippingEl.textContent = '₱' + shipping.toFixed(2);
+                    if (totalEl) totalEl.textContent = '₱' + total.toFixed(2);
+                    if (gcashAmountEl) gcashAmountEl.textContent = '₱' + total.toFixed(2);
+                })
+                .catch(error => {
+                    console.error('Error fetching cart data:', error);
+                });
+        }
+        
+        // Listen for cart update events
+        window.addEventListener('cartUpdated', function(e) {
+            console.log('Cart updated event received, recalculating Order Summary...');
+            recalculateOrderSummary();
+        });
+        
         // Filter items based on selected items from cart
         document.addEventListener('DOMContentLoaded', function() {
             const selectedItemsJson = sessionStorage.getItem('selectedCartItems');
+            const buyNowProductId = sessionStorage.getItem('buyNowProductId');
             console.log('Selected Items JSON:', selectedItemsJson);
+            console.log('Buy Now Product ID:', buyNowProductId);
             
-            if (selectedItemsJson) {
+            if (selectedItemsJson || buyNowProductId) {
                 try {
-                    const selectedItems = JSON.parse(selectedItemsJson);
+                    let filterMode = 'itemId'; // 'itemId' or 'productId'
+                    let selectedItems = [];
+                    
+                    if (buyNowProductId) {
+                        // Buy Now mode: filter by product ID
+                        filterMode = 'productId';
+                        selectedItems = [parseInt(buyNowProductId)];
+                    } else if (selectedItemsJson) {
+                        // Regular cart checkout: filter by item IDs
+                        filterMode = 'itemId';
+                        selectedItems = JSON.parse(selectedItemsJson);
+                    }
+                    
+                    console.log('Filter mode:', filterMode);
                     console.log('Selected Items Array:', selectedItems);
                     
-                    const itemElements = document.querySelectorAll('[data-item-id]');
+                    const itemElements = Array.from(document.querySelectorAll('[data-item-id]'));
                     console.log('Found item elements:', itemElements.length);
                     
                     let selectedSubtotal = 0;
                     let visibleItemsCount = 0;
+                    const visibleItems = [];
+                    const hiddenItems = [];
 
+                    // First pass: categorize items and calculate totals
                     itemElements.forEach(element => {
-                        const itemId = parseInt(element.getAttribute('data-item-id'));
-                        console.log('Checking item ID:', itemId, 'Is selected:', selectedItems.includes(itemId));
+                        let shouldShow = false;
                         
-                        if (selectedItems.includes(itemId)) {
-                            // Show item
-                            element.style.display = 'block';
-                            element.style.visibility = 'visible';
-                            
+                        if (filterMode === 'productId') {
+                            const productId = parseInt(element.getAttribute('data-product-id'));
+                            shouldShow = selectedItems.includes(productId);
+                            console.log('Checking product ID:', productId, 'Is selected:', shouldShow);
+                        } else {
+                            const itemId = parseInt(element.getAttribute('data-item-id'));
+                            shouldShow = selectedItems.includes(itemId);
+                            console.log('Checking item ID:', itemId, 'Is selected:', shouldShow);
+                        }
+                        
+                        if (shouldShow) {
                             // Get the price from the item-price span
                             const priceElement = element.querySelector('.item-price');
                             if (priceElement) {
@@ -289,13 +518,41 @@ $total = $subtotal + $shipping;
                                 console.log('Item price:', price);
                                 selectedSubtotal += price;
                             }
+                            visibleItems.push({
+                                element: element,
+                                productId: parseInt(element.getAttribute('data-product-id'))
+                            });
                             visibleItemsCount++;
                         } else {
-                            // Hide item completely
-                            element.style.display = 'none';
-                            element.style.visibility = 'hidden';
+                            hiddenItems.push(element);
                         }
                     });
+
+                    // Sort visible items by product ID for consistent ordering
+                    visibleItems.sort((a, b) => a.productId - b.productId);
+
+                    // Get the parent container
+                    const container = document.querySelector('.order-items-container');
+                    if (container) {
+                        // Second pass: reorder and show/hide items
+                        visibleItems.forEach((item, index) => {
+                            item.element.style.display = 'flex';
+                            item.element.style.visibility = 'visible';
+                            item.element.style.order = index;
+                            container.appendChild(item.element); // Move to end in sorted order
+                        });
+
+                        // Hide non-selected items completely
+                        hiddenItems.forEach(element => {
+                            element.style.display = 'none';
+                            element.style.visibility = 'hidden';
+                            element.style.height = '0';
+                            element.style.padding = '0';
+                            element.style.margin = '0';
+                            element.style.border = 'none';
+                            element.style.overflow = 'hidden';
+                        });
+                    }
 
                     console.log('Selected subtotal:', selectedSubtotal);
                     console.log('Visible items:', visibleItemsCount);
@@ -372,6 +629,9 @@ $total = $subtotal + $shipping;
                 formData.append('selectedItems', selectedItems);
                 sessionStorage.removeItem('selectedCartItems'); // Clear after using
             }
+            
+            // Clear Buy Now mode if set
+            sessionStorage.removeItem('buyNowProductId');
             
             // Show loading state
             const submitBtn = this.querySelector('button[type="submit"]');

@@ -676,6 +676,8 @@ $isEmpty = empty($cart);
       
       // Store selected items in session storage
       sessionStorage.setItem('selectedCartItems', JSON.stringify(selectedItems));
+      // Clear any previous Buy Now mode
+      sessionStorage.removeItem('buyNowProductId');
       window.location.href = 'checkout.php';
       return false;
     };

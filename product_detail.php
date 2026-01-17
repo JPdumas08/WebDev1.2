@@ -314,6 +314,11 @@ document.addEventListener('DOMContentLoaded', function() {
   buyBtn.addEventListener('click', function(e) {
     e.preventDefault();
     const qty = sanitizeQty();
+    const productId = '<?php echo (int) $productId; ?>';
+    
+    // Set sessionStorage to show ONLY this product in checkout
+1    sessionStorage.setItem('buyNowProductId', productId);
+    
     addToCart(qty, true);
   });
 

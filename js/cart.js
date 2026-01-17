@@ -154,6 +154,11 @@
         }
         // Restore scroll position
         $modalBody.scrollTop(scrollPos);
+        
+        // Dispatch event for checkout page to update Order Summary
+        window.dispatchEvent(new CustomEvent('cartUpdated', { 
+          detail: { item_id: item_id, quantity: quantity } 
+        }));
       });
       
       updateCartBadge();
@@ -172,6 +177,11 @@
         return;
       }
       refreshCartModal($modal);
+      
+      // Dispatch event for checkout page
+      window.dispatchEvent(new CustomEvent('cartUpdated', { 
+        detail: { item_id: item_id, removed: true } 
+      }));
     }).fail(function() {
       if (window.ToastNotification) ToastNotification.error('Network error while removing item.');
     });

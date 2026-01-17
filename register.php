@@ -4,12 +4,17 @@ require_once 'db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/validation.php';
 
+// Handle JSON responses for AJAX requests
+header('Content-Type: application/json');
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: home.php');
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
     exit;
 }
 
 $errors = [];
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
 // Verify CSRF token
 $token = $_POST['csrf_token'] ?? '';
@@ -17,153 +22,131 @@ if (!verify_csrf_token($token)) {
     $errors[] = 'Invalid security token. Please try again.';
 }
 
-// Sanitize and validate inputs
-$first = sanitize_string($_POST['first_name'] ?? '');
-$last = sanitize_string($_POST['last_name'] ?? '');
-$email = validate_email($_POST['email'] ?? '');
-$username = sanitize_string($_POST['username'] ?? '');
+// Sanitize and trim inputs
+$first = trim($_POST['first_name'] ?? '');
+$last = trim($_POST['last_name'] ?? '');
+$email = trim($_POST['email'] ?? '');
+$username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
+$confirm_password = $_POST['confirm_password'] ?? '';
+$agree_terms = isset($_POST['agree_terms']) ? (bool)$_POST['agree_terms'] : false;
 
-// Validation
+// ===== COMPREHENSIVE VALIDATION =====
+
+// Validate First Name
 if ($first === '') {
     $errors[] = 'First name is required.';
-} elseif (strlen($first) < 2) {
-    $errors[] = 'First name must be at least 2 characters.';
+} elseif (!preg_match("/^[A-Za-z]{2,50}([\s'-][A-Za-z]{1,})*$/", $first)) {
+    $errors[] = 'First name must be 2-50 characters (letters, spaces, or hyphens only).';
 }
 
+// Validate Last Name
 if ($last === '') {
     $errors[] = 'Last name is required.';
-} elseif (strlen($last) < 2) {
-    $errors[] = 'Last name must be at least 2 characters.';
+} elseif (!preg_match("/^[A-Za-z]{2,50}([\s'-][A-Za-z]{1,})*$/", $last)) {
+    $errors[] = 'Last name must be 2-50 characters (letters, spaces, or hyphens only).';
 }
 
-if ($email === false) {
-    $errors[] = 'A valid email address is required.';
+// Validate Email
+if ($email === '') {
+    $errors[] = 'Email address is required.';
+} elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    $errors[] = 'Please enter a valid email address.';
+} elseif (strpos($email, ' ') !== false) {
+    $errors[] = 'Email cannot contain spaces.';
+} else {
+    // Check if email exists
+    $emailCheck = $pdo->prepare("SELECT user_id FROM users WHERE LOWER(email_address) = LOWER(?)");
+    try {
+        $emailCheck->execute([$email]);
+        if ($emailCheck->rowCount() > 0) {
+            $errors[] = 'This email address is already in use.';
+        }
+    } catch (Exception $e) {
+        $errors[] = 'Error validating email. Please try again.';
+    }
 }
 
+// Validate Username
 if ($username === '') {
     $errors[] = 'Username is required.';
-} elseif (strlen($username) < 3) {
-    $errors[] = 'Username must be at least 3 characters.';
-} elseif (strlen($username) > 50) {
-    $errors[] = 'Username must be less than 50 characters.';
-} elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
-    $errors[] = 'Username can only contain letters, numbers, and underscores.';
+} elseif (!preg_match('/^[A-Za-z0-9_]{4,20}$/', $username)) {
+    $errors[] = 'Username must be 4-20 characters (letters, numbers, underscores only).';
+} else {
+    // Check if username exists
+    $usernameCheck = $pdo->prepare("SELECT user_id FROM users WHERE LOWER(username) = LOWER(?)");
+    try {
+        $usernameCheck->execute([$username]);
+        if ($usernameCheck->rowCount() > 0) {
+            $errors[] = 'This username is already in use.';
+        }
+    } catch (Exception $e) {
+        $errors[] = 'Error validating username. Please try again.';
+    }
 }
 
-if (strlen($password) < 8) {
-    $errors[] = 'Password must be at least 8 characters.';
-} elseif (strlen($password) > 255) {
-    $errors[] = 'Password is too long.';
+// Validate Password
+if ($password === '') {
+    $errors[] = 'Password is required.';
+} elseif (strlen($password) < 8) {
+    $errors[] = 'Password must be at least 8 characters long.';
+} elseif (!preg_match('/[A-Z]/', $password)) {
+    $errors[] = 'Password must contain at least one uppercase letter.';
+} elseif (!preg_match('/[a-z]/', $password)) {
+    $errors[] = 'Password must contain at least one lowercase letter.';
+} elseif (!preg_match('/[0-9]/', $password)) {
+    $errors[] = 'Password must contain at least one number.';
+} elseif (!preg_match('/[!@#$%^&*?]/', $password)) {
+    $errors[] = 'Password must contain at least one special character (!@#$%^&*?).';
+} elseif (strpos($password, ' ') !== false) {
+    $errors[] = 'Password cannot contain spaces.';
+}
+
+// Validate Confirm Password
+if ($password !== $confirm_password) {
+    $errors[] = 'Passwords do not match.';
+}
+
+// Validate Terms Agreement
+if (!$agree_terms) {
+    $errors[] = 'You must agree to the Terms and Conditions.';
 }
 
 if (empty($errors)) {
   try {
-    // Detect which column names the `users` table actually uses.
-    $cols = [];
-    $stmt = $pdo->query('SHOW COLUMNS FROM users');
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-      $cols[] = $r['Field'];
-    }
-
-    $find = function(array $candidates) use ($cols) {
-      foreach ($candidates as $cand) {
-        foreach ($cols as $col) {
-          if (strtolower($col) === strtolower($cand)) return $col;
-        }
-      }
-      return null;
-    };
-
-    $emailCol = $find(['email', 'email_address']);
-    $usernameCol = $find(['username', 'user_name', 'user']);
-    $passwordCol = $find(['password', 'pass', 'passwd']);
-    $firstCol = $find(['first_name', 'firstname', 'first']);
-    $lastCol = $find(['last_name', 'lastname', 'last']);
-
-    $missing = [];
-    if (!$emailCol) $missing[] = 'email (or email_address)';
-    if (!$usernameCol) $missing[] = 'username (or user_name)';
-    if (!$passwordCol) $missing[] = 'password (or pass/passwd)';
-    if (!$firstCol) $missing[] = 'first_name';
-    if (!$lastCol) $missing[] = 'last_name';
-
-    if (!empty($missing)) {
-      $errors[] = 'Users table is missing required column(s): ' . implode(', ', $missing) . 
-        '. Existing columns: ' . implode(', ', $cols);
-    } else {
-      // Use detected column names (safe because they come from SHOW COLUMNS)
-      $emailColQ = "`$emailCol`";
-      $usernameColQ = "`$usernameCol`";
-      $firstColQ = "`$firstCol`";
-      $lastColQ = "`$lastCol`";
-      $passwordColQ = "`$passwordCol`";
-
-      $checkSql = "SELECT COUNT(*) FROM users WHERE {$emailColQ} = :email OR {$usernameColQ} = :username";
-      $check = $pdo->prepare($checkSql);
-      $check->execute([':email' => $email, ':username' => $username]);
-
-      if ($check->fetchColumn() > 0) {
-        $errors[] = 'An account with that email or username already exists.';
-      } else {
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $colsList = [$firstColQ, $lastColQ, $emailColQ, $usernameColQ, $passwordColQ];
-        $placeholders = [':first', ':last', ':email', ':username', ':password'];
-        $insSql = 'INSERT INTO users (' . implode(', ', $colsList) . ') VALUES (' . implode(', ', $placeholders) . ')';
-        $ins = $pdo->prepare($insSql);
-        $ok = $ins->execute([
-          ':first' => $first,
-          ':last' => $last,
-          ':email' => $email,
-          ':username' => $username,
-          ':password' => $hash
-        ]);
-        if ($ok) {
-          header('Location: login.php?registered=1');
-          exit;
-        }
-        $errors[] = 'Failed to create account.';
-      }
-    }
+    // Hash password securely
+    $hash = password_hash($password, PASSWORD_BCRYPT);
+    
+    // Insert user into database
+    $sql = "INSERT INTO users (first_name, last_name, email_address, username, password, created_at) 
+            VALUES (:first, :last, :email, :username, :password, NOW())";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+      ':first' => $first,
+      ':last' => $last,
+      ':email' => $email,
+      ':username' => $username,
+      ':password' => $hash
+    ]);
+    
+    // Return success response
+    echo json_encode([
+      'success' => true,
+      'message' => 'Account created successfully! Please sign in.'
+    ]);
+    exit;
+    
   } catch (Exception $e) {
-    $errors[] = 'Database error: ' . $e->getMessage();
+    $errors[] = 'Failed to create account. Please try again.';
+    error_log('Registration error: ' . $e->getMessage());
   }
 }
 
-?>
-<?php
-$pageTitle = 'Registration Result';
-require_once __DIR__ . '/includes/header.php';
-?>
-
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body text-center">
-          <?php if (empty($errors)): ?>
-            <h4 class="text-success">Account created</h4>
-            <p class="mb-3">Your account has been created. Please sign in.</p>
-            <a href="login.php" class="btn btn-primary">Sign in</a>
-          <?php else: ?>
-            <h4 class="text-danger">Registration failed</h4>
-            <div class="text-start small text-muted mb-3">
-              <strong>Errors:</strong>
-              <ul>
-                <?php foreach ($errors as $err): ?>
-                  <li><?php echo htmlspecialchars($err); ?></li>
-                <?php endforeach; ?>
-              </ul>
-            </div>
-            <a href="home.php" class="btn btn-secondary">Back</a>
-          <?php endif; ?>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<?php
-$extra_scripts = '';
-include __DIR__ . '/includes/footer.php';
-?>
+// Return error response
+http_response_code(400);
+echo json_encode([
+  'success' => false,
+  'message' => $errors[0] ?? 'Registration failed. Please try again.',
+  'errors' => $errors
+]);
+exit;

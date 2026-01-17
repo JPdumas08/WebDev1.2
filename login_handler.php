@@ -3,24 +3,42 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/validation.php';
 require_once __DIR__ . '/db.php';
 
+header('Content-Type: application/json');
 init_session();
 
-// Check rate limiting (5 attempts per 15 minutes)
-if (!check_rate_limit('login', 5, 900)) {
-    if (wants_json()) {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'too_many_attempts', 'message' => 'Too many login attempts. Please try again later.']);
-        exit;
+// ===== RATE LIMITING FOR BRUTE FORCE PROTECTION =====
+function checkRateLimit($identifier, $maxAttempts = 5, $windowSeconds = 900) {
+    $cacheKey = 'login_attempts_' . md5($identifier);
+    $sessionKey = 'login_attempts_' . md5($identifier);
+    
+    $attempts = $_SESSION[$sessionKey] ?? 0;
+    $firstAttempt = $_SESSION[$sessionKey . '_time'] ?? 0;
+    $now = time();
+    
+    // Reset if outside time window
+    if ($now - $firstAttempt > $windowSeconds) {
+        $_SESSION[$sessionKey] = 0;
+        $_SESSION[$sessionKey . '_time'] = $now;
+        return true;
     }
-    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=rate_limit');
-    exit;
+    
+    if ($attempts >= $maxAttempts) {
+        return false;
+    }
+    
+    return true;
 }
 
-// Helper to detect AJAX / JSON requests
-function wants_json() {
-    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
-    $xhr = strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
-    return $xhr || stripos($accept, 'application/json') !== false;
+function recordFailedAttempt($identifier) {
+    $sessionKey = 'login_attempts_' . md5($identifier);
+    $_SESSION[$sessionKey] = ($_SESSION[$sessionKey] ?? 0) + 1;
+    $_SESSION[$sessionKey . '_time'] = time();
+}
+
+function resetAttempts($identifier) {
+    $sessionKey = 'login_attempts_' . md5($identifier);
+    unset($_SESSION[$sessionKey]);
+    unset($_SESSION[$sessionKey . '_time']);
 }
 
 function normalize_redirect(string $raw = ''): string {
@@ -47,108 +65,103 @@ function normalize_redirect(string $raw = ''): string {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /');
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
     exit;
 }
 
 // Verify CSRF token
 $token = $_POST['csrf_token'] ?? '';
 if (!verify_csrf_token($token)) {
-    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=csrf');
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Security validation failed. Please try again.']);
     exit;
 }
 
 $emailOrUser = trim($_POST['email'] ?? $_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
+$redirectTo = normalize_redirect($_POST['redirect_to'] ?? '');
 
-if ($emailOrUser === '' || $password === '') {
-    // simple back redirect with error
-    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=missing');
+// ===== INPUT VALIDATION =====
+
+// Validate Email or Username field
+if ($emailOrUser === '') {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Email or username is required.']);
+    exit;
+}
+
+if (strlen($emailOrUser) > 255 || strpos($emailOrUser, ' ') !== false) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Invalid email or username format.']);
+    exit;
+}
+
+// Validate Password field
+if ($password === '' || (is_string($password) && ctype_space($password))) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Password is required.']);
+    exit;
+}
+
+// Check rate limiting
+if (!checkRateLimit($emailOrUser)) {
+    http_response_code(429);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Too many login attempts. Please try again in 15 minutes.'
+    ]);
     exit;
 }
 
 try {
-    // try to find a usable identifier column
-    $cols = ['email','email_address','username','user_name'];
-    $foundCol = null;
-    foreach ($cols as $c) {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = :db AND TABLE_NAME = 'users' AND COLUMN_NAME = :col");
-        $stmt->execute([':db' => $pdo->query('select database()')->fetchColumn(), ':col' => $c]);
-        if ($stmt->fetchColumn() > 0) { $foundCol = $c; break; }
-    }
-    if (!$foundCol) {
-        // fall back to a guess
-        $foundCol = 'email';
-    }
-
-    $sql = "SELECT * FROM users WHERE $foundCol = :id LIMIT 1";
+    // Find user by email or username
+    $sql = "SELECT user_id, first_name, last_name, email_address, username, password 
+            FROM users 
+            WHERE email_address = :id OR username = :id 
+            LIMIT 1";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([':id' => $emailOrUser]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$user) {
-        if (wants_json()) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'notfound']);
-            exit;
-        }
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=notfound');
+    // Generic error message (don't reveal if email/username or password is wrong)
+    if (!$user || !password_verify($password, $user['password'] ?? '')) {
+        recordFailedAttempt($emailOrUser);
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid email/username or password. Please try again.'
+        ]);
         exit;
     }
 
-    $stored = $user['password'] ?? $user['pass'] ?? $user['passwd'] ?? '';
-    $verified = false;
-    if ($stored && password_verify($password, $stored)) {
-        $verified = true;
-    } else {
-        // In case passwords are stored plaintext (legacy), compare directly
-        if (hash_equals((string)$stored, (string)$password)) {
-            $verified = true;
-        }
-    }
-
-    if (!$verified) {
-        if (wants_json()) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'bad_credentials']);
-            exit;
-        }
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=bad');
-        exit;
-    }
-
-    // success
-    login_user($user);
-
-    // Ensure a simple user id is present in session for other APIs
-    init_session(); // make sure session is active after login_user
-    $normalizedId = $user['user_id'] ?? $user['id'] ?? $user['userId'] ?? $user['userID'] ?? null;
-    if ($normalizedId !== null) {
-        // store a simple integer id at $_SESSION['user_id'] for compatibility
-        $_SESSION['user_id'] = (int)$normalizedId;
-        // also ensure the nested user id stays consistent
-        if (!empty($_SESSION['user'])) {
-            $_SESSION['user']['id'] = (int)$normalizedId;
-        }
-    }
+    // Authentication successful - reset rate limit and set session
+    resetAttempts($emailOrUser);
     
-    // Ensure session is written to storage before redirecting
-    session_write_close();
-
-    if (wants_json()) {
-        header('Content-Type: application/json');
-        $display = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: ($user['username'] ?? $user['email'] ?? '');
-        echo json_encode(['success' => true, 'user' => ['display' => $display]]);
-        exit;
-    }
-
-    // redirect back to the intended page and show a one-time success flag
-    $redirect = normalize_redirect($_POST['redirect_to'] ?? 'home.php');
-    $separator = (strpos($redirect, '?') === false) ? '?' : '&';
-    header('Location: ' . $redirect . $separator . 'login=ok&refresh_badges=1');
+    $_SESSION['user'] = [
+        'id' => $user['user_id'],
+        'username' => $user['username'],
+        'email' => $user['email_address'],
+        'first_name' => $user['first_name'],
+        'last_name' => $user['last_name']
+    ];
+    $_SESSION['user_id'] = $user['user_id'];
+    session_regenerate_id(true);
+    
+    // Return success with redirect
+    echo json_encode([
+        'success' => true,
+        'message' => 'Login successful!',
+        'redirect_url' => $redirectTo
+    ]);
     exit;
 
 } catch (Exception $e) {
-    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=err');
+    error_log('Login error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'An error occurred. Please try again later.'
+    ]);
     exit;
 }

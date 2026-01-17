@@ -2,32 +2,38 @@
 require_once __DIR__ . '/init_session.php';
 require_once __DIR__ . '/db.php';
 
-// Redirect if not logged in
-if (empty($_SESSION['user_id'])) {
+// Check if we should show login modal instead of redirecting
+$showLoginModal = isset($_GET['showLogin']);
+
+// Redirect if not logged in (unless we're showing the login modal)
+if (empty($_SESSION['user_id']) && !$showLoginModal) {
     header('Location: login.php?redirect=wishlist');
     exit();
 }
 
-$user_id = (int) $_SESSION['user_id'];
+$user_id = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0;
 $success_message = '';
 
-// Handle remove from wishlist
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_from_wishlist'])) {
+// Handle remove from wishlist (only if logged in)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_from_wishlist']) && $user_id > 0) {
     $product_id = (int) $_POST['product_id'];
     $pdo->prepare("DELETE FROM wishlist WHERE user_id = :uid AND product_id = :pid")
         ->execute([':uid' => $user_id, ':pid' => $product_id]);
     $success_message = 'Item removed from wishlist.';
 }
 
-// Fetch wishlist items with product details
-$wishlist_sql = "SELECT w.*, p.product_name, p.product_price, p.product_image
-                 FROM wishlist w
-                 JOIN products p ON w.product_id = p.product_id
-                 WHERE w.user_id = :uid
-                 ORDER BY w.added_at DESC";
-$stmt = $pdo->prepare($wishlist_sql);
-$stmt->execute([':uid' => $user_id]);
-$wishlist_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Fetch wishlist items with product details (only if logged in)
+$wishlist_items = [];
+if ($user_id > 0) {
+    $wishlist_sql = "SELECT w.*, p.product_name, p.product_price, p.product_image
+                     FROM wishlist w
+                     JOIN products p ON w.product_id = p.product_id
+                     WHERE w.user_id = :uid
+                     ORDER BY w.added_at DESC";
+    $stmt = $pdo->prepare($wishlist_sql);
+    $stmt->execute([':uid' => $user_id]);
+    $wishlist_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 
 <?php
@@ -184,7 +190,7 @@ include 'includes/header.php';
                                 }
                             }
                         }).catch(error => console.error('Error updating cart badge:', error));
-                        }
+                        
                         ToastNotification.success('Added to cart!');
                     } else {
                         ToastNotification.error(data.message || 'Failed to add to cart.');
@@ -196,4 +202,19 @@ include 'includes/header.php';
                 });
             });
         });
-    </script>
+        
+        // Show login modal if showLogin parameter is present
+        <?php if ($showLoginModal): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            const accountModal = document.getElementById('accountModal');
+            if (accountModal) {
+                const modal = new bootstrap.Modal(accountModal);
+                modal.show();
+                
+                // Remove showLogin parameter from URL after showing modal
+                const url = new URL(window.location);
+                url.searchParams.delete('showLogin');
+                window.history.replaceState({}, '', url);
+            }
+        });
+        <?php endif; ?>

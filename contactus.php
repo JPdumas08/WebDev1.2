@@ -7,6 +7,37 @@ $pageTitle = 'Jeweluxe - Contact Us';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
+<!-- ELEGANT JEWELRY HERO SECTION -->
+<header class="jewelry-hero" style="background: linear-gradient(135deg, rgba(139, 111, 71, 0.75) 0%, rgba(168, 153, 104, 0.75) 100%), url('Video/wallpaper.jpg') center/cover no-repeat; min-height: 50vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+  <!-- Decorative overlay -->
+  <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(ellipse at center top, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%); pointer-events: none;"></div>
+  
+  <!-- Centered Content -->
+  <div class="container text-center text-white position-relative" style="z-index: 2; max-width: 900px;">
+    <!-- Decorative element -->
+    <div style="margin-bottom: 30px; opacity: 0.9;">
+      <i class="fas fa-gem" style="font-size: 3rem; color: #ffd700; text-shadow: 0 2px 10px rgba(0,0,0,0.3);"></i>
+    </div>
+    
+    <!-- Main heading -->
+    <h1 style="font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; text-shadow: 0 4px 12px rgba(0,0,0,0.3); line-height: 1.2;">
+      Get In Touch
+    </h1>
+    
+    <!-- Subheading -->
+    <p style="font-size: clamp(1.1rem, 3vw, 1.5rem); margin-bottom: 50px; color: #f5f5f5; font-weight: 500; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); line-height: 1.6;">
+      We'd love to hear from you. Contact us today!
+    </p>
+    
+    <!-- CTA Button -->
+    <div class="d-flex justify-content-center gap-4 flex-wrap">
+      <a href="#contact-section" class="btn btn-lg px-5 py-3" style="background-color: #8b6f47; border: none; color: white; font-weight: 700; letter-spacing: 1.5px; font-size: 1rem; box-shadow: 0 6px 25px rgba(0,0,0,0.25); transition: all 0.3s ease; border-radius: 8px;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 35px rgba(0,0,0,0.35)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 25px rgba(0,0,0,0.25)';">
+        <i class="fas fa-envelope me-2"></i>Send Message
+      </a>
+    </div>
+  </div>
+</header>
+
 <style>
     /* Custom focus highlighting */
     .form-control:focus {
@@ -63,16 +94,8 @@ require_once __DIR__ . '/includes/header.php';
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
   </style>
-  <div class="main-content">
 
-    <header class="text-center text-white py-5 bg-dark" style="background:url('Video/wallpaper.jpg') center/cover no-repeat;">
-    <div class="container">
-      <h1 class="display-4">Contact Jeweluxe</h1>
-      <p class="lead">Get in touch with us for any inquiries or support!</p>
-    </div>
-  </header>
-
-  <section class="container py-5">
+  <section class="container py-5" id="contact-section">
     <div class="row">
     
       <div class="col-lg-4 mb-4">

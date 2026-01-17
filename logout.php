@@ -38,5 +38,6 @@ if (preg_match('#^https?://#i', $redirect)) {
     $redirect = 'home.php';
 }
 
-header('Location: ' . $redirect);
+$separator = (strpos($redirect, '?') === false) ? '?' : '&';
+header('Location: ' . $redirect . $separator . 'refresh_badges=1');
 exit;

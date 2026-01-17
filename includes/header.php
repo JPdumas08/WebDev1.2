@@ -16,20 +16,22 @@ $pageTitle = $pageTitle ?? 'Jeweluxe';
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <!-- Custom stylesheet -->
-  <link href="dist/styles.css" rel="stylesheet">
+  <link href="styles.css?v=<?= time() ?>" rel="stylesheet">
   <!-- jQuery (needed by some inline page scripts) -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
-<body>
+<body data-logged-in="<?php echo is_logged_in() ? '1' : '0'; ?>" data-user-id="<?php echo is_logged_in() ? (current_user()['id'] ?? '') : ''; ?>">
 <?php include __DIR__ . '/navbar.php'; ?>
 <!-- Shared Modals moved here so they are available early in the document -->
-<!-- Account Modal (Login) -->
+<!-- MODERN ACCOUNT LOGIN MODAL -->
 <div class="modal fade" id="accountModal" tabindex="-1" aria-labelledby="accountModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="accountModalLabel"><img src="image/user.svg" alt="Account" class="me-2" style="height:1.25em; width:1.25em; vertical-align:middle;">Account</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content modern-modal">
+      <div class="modal-header border-0 bg-gradient-primary text-white">
+        <h5 class="modal-title" id="accountModalLabel" style="font-size: 1.05rem;">
+          <i class="fas fa-user-circle me-2"></i>Sign In to Your Account
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <?php
@@ -38,42 +40,63 @@ $pageTitle = $pageTitle ?? 'Jeweluxe';
           $u = current_user();
           $display = trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')) ?: ($u['username'] ?? $u['email'] ?? '');
         ?>
-          <div class="text-center py-3">
-            <h5>Signed in as</h5>
-            <p class="lead"><?php echo htmlspecialchars($display, ENT_QUOTES, 'UTF-8'); ?></p>
-            <div class="d-grid gap-2">
-              <a class="btn btn-outline-secondary" href="logout.php">Sign Out</a>
+          <div class="text-center py-4">
+            <div class="user-avatar-large mb-3">
+              <i class="fas fa-user-circle fa-4x text-primary"></i>
+            </div>
+            <h4 class="welcome-title">Welcome Back!</h4>
+            <p class="user-email lead"><?php echo htmlspecialchars($display, ENT_QUOTES, 'UTF-8'); ?></p>
+            <div class="account-quick-actions d-grid gap-2 mt-4">
+              <a class="btn btn-outline-primary" href="account_settings.php">
+                <i class="fas fa-cog me-2"></i>Account Settings
+              </a>
+              <a class="btn btn-outline-secondary" href="logout.php">
+                <i class="fas fa-sign-out-alt me-2"></i>Sign Out
+              </a>
             </div>
           </div>
         <?php else: ?>
+          <div class="divider-section">
+            <div class="divider-line"></div>
+            <span class="divider-text">Sign In</span>
+            <div class="divider-line"></div>
+          </div>
+          
           <form id="loginForm" method="post" action="login_handler.php">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/', ENT_QUOTES, 'UTF-8'); ?>">
             <div class="mb-3">
-              <label for="loginEmail" class="form-label">Email or Username</label>
-              <input name="email" type="text" class="form-control" id="loginEmail" placeholder="Enter your email or username" required>
+              <label for="loginEmail" class="form-label fw-bold" style="font-size: 0.85rem;">
+                  <i class="fas fa-envelope me-1 text-muted"></i>Email or Username
+              </label>
+              <input name="email" type="text" class="form-control form-control-lg" id="loginEmail" placeholder="Enter your email or username" required>
             </div>
+            
             <div class="mb-3">
-              <label for="loginPassword" class="form-label">Password</label>
-              <div class="input-group">
-                <input name="password" type="password" class="form-control" id="loginPassword" placeholder="Enter your password" data-required="true">
-              </div>
+              <label for="loginPassword" class="form-label fw-bold" style="font-size: 0.85rem;">
+                  <i class="fas fa-lock me-1 text-muted"></i>Password
+              </label>
+              <input name="password" type="password" class="form-control form-control-lg" id="loginPassword" placeholder="Enter your password" data-required="true">
               <div class="form-check mt-2">
-                <input type="checkbox" class="form-check-input" id="toggleLoginPassword">
-                <label class="form-check-label" for="toggleLoginPassword">Show Password</label>
+                <input class="form-check-input" type="checkbox" id="showLoginPassword" onclick="togglePassword('loginPassword')">
+                  <label class="form-check-label" for="showLoginPassword" style="font-size: 0.85rem; color: #6c757d;">
+                  Show Password
+                </label>
               </div>
             </div>
-            <div class="mb-3 form-check">
-              <input type="checkbox" class="form-check-input" id="rememberMe">
-              <label class="form-check-label" for="rememberMe">Remember me</label>
-            </div>
+            
             <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-primary">Sign In</button>
+              <button type="submit" class="btn btn-primary btn-lg" style="font-size: 1rem;">
+                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+              </button>
             </div>
           </form>
-          <hr class="my-4">
-          <div class="text-center">
-            <p class="mb-3">Don't have an account yet?</p>
-            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#registerModal" data-bs-dismiss="modal">Create New Account</button>
+          
+          <div class="signup-section text-center mt-4">
+            <p class="text-muted" style="font-size: 0.875rem;">Don't have an account yet?</p>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#registerModal" data-bs-dismiss="modal" style="font-size: 0.9rem;">
+              <i class="fas fa-user-plus me-2"></i>Create New Account
+            </button>
           </div>
         <?php endif; ?>
       </div>
@@ -81,79 +104,108 @@ $pageTitle = $pageTitle ?? 'Jeweluxe';
   </div>
 </div>
 
-<!-- Registration Modal -->
+<!-- MODERN REGISTRATION MODAL -->
 <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="registerModalLabel">📝 Create New Account</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content modern-modal">
+      <div class="modal-header border-0 bg-gradient-success text-white">
+        <h5 class="modal-title" id="registerModalLabel" style="font-size: 1.05rem;">
+          <i class="fas fa-user-plus me-2"></i>Create Your Jeweluxe Account
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <form id="registerForm" method="post" action="register.php" novalidate>
+          <?php echo csrf_field(); ?>
           <div id="registerFeedback" class="mb-3" aria-live="polite"></div>
-          <div id="registerPreview" class="mb-3" style="display:none;">
-            <div class="card p-2 bg-light">
-              <strong>Preview (not saved):</strong>
-              <div id="previewFirstLast" class="small text-muted"></div>
-              <div id="previewEmail" class="small text-muted"></div>
-              <div id="previewUsername" class="small text-muted"></div>
+          <div class="row g-3">
+            <div class="col-md-6">
+                <label for="firstName" class="form-label fw-bold" style="font-size: 0.85rem;">
+                <i class="fas fa-user me-1 text-muted"></i>First Name
+              </label>
+              <input type="text" class="form-control form-control-lg" id="firstName" name="first_name" placeholder="Enter your first name" required pattern="^[A-Za-z][A-Za-z\s'-]*$" title="Letters only" inputmode="text" oninput="this.value=this.value.replace(/[^A-Za-z\s'-]/g,'');">
+            </div>
+            <div class="col-md-6">
+                <label for="lastName" class="form-label fw-bold" style="font-size: 0.85rem;">
+                <i class="fas fa-user me-1 text-muted"></i>Last Name
+              </label>
+              <input type="text" class="form-control form-control-lg" id="lastName" name="last_name" placeholder="Enter your last name" required pattern="^[A-Za-z][A-Za-z\s'-]*$" title="Letters only" inputmode="text" oninput="this.value=this.value.replace(/[^A-Za-z\s'-]/g,'');">
             </div>
           </div>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label for="firstName" class="form-label">First Name</label>
-              <input type="text" class="form-control" id="firstName" name="first_name" placeholder="Enter your first name" required>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label for="lastName" class="form-label">Last Name</label>
-              <input type="text" class="form-control" id="lastName" name="last_name" placeholder="Enter your last name" required>
-            </div>
-          </div>
+          
           <div class="mb-3">
-            <label for="registerEmail" class="form-label">Email Address</label>
-            <input type="email" class="form-control" id="registerEmail" name="email" placeholder="Enter your email address" required>
-          </div>
-          <div class="mb-3">
-            <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" id="username" name="username" placeholder="Choose a username" required>
-          </div>
-          <div class="mb-3">
-            <label for="registerPassword" class="form-label">Password</label>
-            <div class="input-group">
-              <input type="password" class="form-control" id="registerPassword" name="password" placeholder="Create a password" data-required="true">
-            </div>
-            <div class="form-check mt-2">
-              <input type="checkbox" class="form-check-input" id="toggleRegisterPassword">
-              <label class="form-check-label" for="toggleRegisterPassword">Show Password</label>
-            </div>
-            <div class="form-text">Password must be at least 8 characters long.</div>
-          </div>
-          <div class="mb-3">
-            <label for="confirmPassword" class="form-label">Confirm Password</label>
-            <div class="input-group">
-              <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="Confirm your password" data-required="true">
-            </div>
-            <div class="form-check mt-2">
-              <input type="checkbox" class="form-check-input" id="toggleConfirmPassword">
-              <label class="form-check-label" for="toggleConfirmPassword">Show Password</label>
-            </div>
-          </div>
-          <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="agreeTerms" required>
-            <label class="form-check-label" for="agreeTerms">
-              I agree to the <a href="#" class="text-primary">Terms and Conditions</a>
+            <label for="registerEmail" class="form-label fw-bold" style="font-size: 0.85rem;">
+              <i class="fas fa-envelope me-1 text-muted"></i>Email Address
             </label>
+            <input type="email" class="form-control form-control-lg" id="registerEmail" name="email" placeholder="Enter your email address" required>
           </div>
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-success">Create Account</button>
+          
+          <div class="mb-3">
+            <label for="username" class="form-label fw-bold" style="font-size: 0.85rem;">
+              <i class="fas fa-at me-1 text-muted"></i>Username
+            </label>
+            <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Choose a unique username" required>
+          </div>
+          
+          <div class="row g-3">
+            <div class="col-md-6">
+                <label for="registerPassword" class="form-label fw-bold" style="font-size: 0.85rem;">
+                <i class="fas fa-lock me-1 text-muted"></i>Password
+              </label>
+              <input type="password" class="form-control form-control-lg" id="registerPassword" name="password" placeholder="Create a strong password" data-required="true">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="showRegisterPassword" onclick="togglePassword('registerPassword')">
+                  <label class="form-check-label" for="showRegisterPassword" style="font-size: 0.85rem; color: #6c757d;">
+                  Show Password
+                </label>
+              </div>
+            </div>
+            <div class="col-md-6">
+                <label for="confirmPassword" class="form-label fw-bold" style="font-size: 0.85rem;">
+                <i class="fas fa-lock me-1 text-muted"></i>Confirm Password
+              </label>
+              <input type="password" class="form-control form-control-lg" id="confirmPassword" name="confirm_password" placeholder="Confirm your password" data-required="true">
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="showConfirmPassword" onclick="togglePassword('confirmPassword')">
+                  <label class="form-check-label" for="showConfirmPassword" style="font-size: 0.85rem; color: #6c757d;">
+                  Show Password
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="password-strength mb-3">
+            <div class="strength-meter mb-2">
+              <div class="strength-bar" id="strengthBar"></div>
+            </div>
+            <small class="text-muted" id="strengthText">Password strength: None</small>
+          </div>
+          
+          <div class="mb-4">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+              <label class="form-check-label" for="agreeTerms" style="font-size: 0.875rem;">
+                I agree to the <a href="#" class="text-primary">Terms & Conditions</a> and <a href="#" class="text-primary">Privacy Policy</a>
+              </label>
+            </div>
+          </div>
+          
+          <div class="d-grid">
+            <button type="submit" class="btn btn-success btn-lg" style="font-size: 1rem;">
+              <i class="fas fa-user-plus me-2"></i>Create Account
+            </button>
           </div>
         </form>
-        <hr class="my-4">
+        
+        <div class="divider-section my-4">
+          <div class="divider-line"></div>
+          <span class="divider-text" style="font-size: 0.8rem;">ALREADY HAVE AN ACCOUNT?</span>
+          <div class="divider-line"></div>
+        </div>
+        
         <div class="text-center">
-          <p class="mb-3">Already have an account?</p>
-          <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#accountModal" data-bs-dismiss="modal">
-            Sign In Instead
+          <button type="button" class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#accountModal" data-bs-dismiss="modal" style="font-size: 0.9rem;">
+            <i class="fas fa-sign-in-alt me-2"></i>Sign In Instead
           </button>
         </div>
       </div>
@@ -162,172 +214,7 @@ $pageTitle = $pageTitle ?? 'Jeweluxe';
 </div>
 
 <!-- Shopping Cart Modal -->
-<div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="cartModalLabel">🛒 Shopping Cart</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <!-- Empty Cart Content -->
-        <div id="emptyCart" class="text-center py-5">
-          <div class="mb-4">
-            <i class="fas fa-shopping-cart fa-4x text-muted"></i>
-          </div>
-          <h4 class="text-muted mb-3">Your cart is empty</h4>
-          <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-            Continue Shopping
-          </button>
-        </div>
-        
-        <!-- Cart Items Content (hidden by default) -->
-        <div id="cartItems" style="display: none;">
-          <div class="cart-item-list">
-            <!-- Cart items will be populated here via JavaScript -->
-          </div>
-          <div class="cart-summary mt-4 pt-4 border-top">
-            <div class="d-flex justify-content-between">
-              <strong>Total: <span id="cartTotal">₱0.00</span></strong>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" id="cartFooter" style="display: none;">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-success" id="cartProceedBtn"
-                data-logged-in="<?php echo is_logged_in() ? '1' : '0'; ?>">Proceed to Checkout</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-// Handle proceed-to-checkout from the cart modal
-document.addEventListener('DOMContentLoaded', function() {
-  const btn = document.getElementById('cartProceedBtn');
-  if (!btn) return;
-
-  btn.addEventListener('click', function() {
-    const loggedIn = btn.getAttribute('data-logged-in') === '1';
-    if (loggedIn) {
-      window.location.href = 'checkout.php';
-      return;
-    }
-
-    // Not logged in: close cart modal and open account modal for login
-    const cartEl = document.getElementById('cartModal');
-    const accountEl = document.getElementById('accountModal');
-    if (cartEl && typeof bootstrap !== 'undefined') {
-      const cartModal = bootstrap.Modal.getOrCreateInstance(cartEl);
-      cartModal.hide();
-    }
-    if (accountEl && typeof bootstrap !== 'undefined') {
-      const accountModal = bootstrap.Modal.getOrCreateInstance(accountEl);
-      accountModal.show();
-    } else {
-      // Fallback: redirect to login page
-      window.location.href = 'login.php?redirect=checkout';
-    }
-  });
-});
-
-// Custom Toast Notification System
-const ToastNotification = {
-  show(message, type = 'success', duration = 3000) {
-    // Create toast container if doesn't exist
-    let toastContainer = document.getElementById('customToastContainer');
-    if (!toastContainer) {
-      toastContainer = document.createElement('div');
-      toastContainer.id = 'customToastContainer';
-      toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
-      document.body.appendChild(toastContainer);
-    }
-
-    // Create toast element
-    const toast = document.createElement('div');
-    const typeClass = {
-      'success': 'bg-success',
-      'error': 'bg-danger',
-      'warning': 'bg-warning',
-      'info': 'bg-info'
-    }[type] || 'bg-info';
-
-    toast.innerHTML = `
-      <div class="alert alert-dismissible fade show ${typeClass} text-white mb-3" role="alert" style="min-width: 300px;">
-        <div>
-          <strong>${type.charAt(0).toUpperCase() + type.slice(1)}!</strong> ${message}
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
-      </div>
-    `;
-
-    toastContainer.appendChild(toast.firstElementChild);
-
-    // Auto dismiss after duration
-    if (duration > 0) {
-      setTimeout(() => {
-        const dismissBtn = toast.querySelector('[data-bs-dismiss="alert"]');
-        if (dismissBtn) dismissBtn.click();
-      }, duration);
-    }
-  },
-
-  success(message) { this.show(message, 'success'); },
-  error(message) { this.show(message, 'error'); },
-  warning(message) { this.show(message, 'warning'); },
-  info(message) { this.show(message, 'info'); }
-};
-
-// Custom Confirmation Modal
-const ConfirmModal = {
-  show(title, message, onConfirm, onCancel) {
-    let modal = document.getElementById('customConfirmModal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'customConfirmModal';
-      modal.className = 'modal fade';
-      modal.tabIndex = -1;
-      modal.setAttribute('aria-hidden', 'true');
-      document.body.appendChild(modal);
-    }
-
-    modal.innerHTML = `
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">${title}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            ${message}
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="confirmBtn">Confirm</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const bsModal = new bootstrap.Modal(modal);
-    const confirmBtn = modal.querySelector('#confirmBtn');
-
-    confirmBtn.addEventListener('click', () => {
-      bsModal.hide();
-      if (onConfirm) onConfirm();
-    });
-
-    modal.addEventListener('hidden.bs.modal', () => {
-      if (onCancel) onCancel();
-    });
-
-    bsModal.show();
-    return false;
-  }
-};
-</script>
+<?php include __DIR__ . '/cart-modal.php'; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

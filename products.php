@@ -7,11 +7,47 @@ $pageTitle = 'Jeweluxe - Products';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<!-- HERO -->
-<header class="text-center text-white py-5 bg-dark" style="background:url(Video/wallpaper.jpg) center/cover no-repeat;">
-  <div class="container">
-    <h1 class="display-4">Our Jewelry Collection</h1>
-    <p class="lead">Discover timeless jewelry for every occasion!</p>
+<!-- ELEGANT JEWELRY HERO SECTION -->
+<header class="jewelry-hero" style="background: linear-gradient(135deg, rgba(139, 111, 71, 0.75) 0%, rgba(168, 153, 104, 0.75) 100%), url('Video/wallpaper.jpg') center/cover no-repeat; min-height: 50vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+  <!-- Decorative overlay -->
+  <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(ellipse at center top, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.3) 100%); pointer-events: none;"></div>
+  
+  <!-- Centered Content -->
+  <div class="container text-center text-white position-relative" style="z-index: 2; max-width: 900px;">
+    <!-- Decorative element -->
+    <div style="margin-bottom: 30px; opacity: 0.9;">
+      <i class="fas fa-gem" style="font-size: 3rem; color: #ffd700; text-shadow: 0 2px 10px rgba(0,0,0,0.3);"></i>
+    </div>
+    
+    <!-- Main heading -->
+    <h1 style="font-size: clamp(2.5rem, 8vw, 4rem); font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; text-shadow: 0 4px 12px rgba(0,0,0,0.3); line-height: 1.2;">
+      Explore Our Collection
+    </h1>
+    
+    <!-- Subheading -->
+    <p style="font-size: clamp(1.1rem, 3vw, 1.5rem); margin-bottom: 50px; color: #f5f5f5; font-weight: 500; letter-spacing: 0.5px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); line-height: 1.6;">
+      Discover exquisite pieces, crafted with precision and passion
+    </p>
+    
+    <!-- Feature badges -->
+    <div class="d-flex justify-content-center flex-wrap gap-3 mb-5">
+      <span style="background: rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+        <i class="fas fa-filter me-2"></i>500+ Products
+      </span>
+      <span style="background: rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+        <i class="fas fa-truck me-2"></i>Free Shipping
+      </span>
+      <span style="background: rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.9rem; font-weight: 600; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+        <i class="fas fa-shield-alt me-2"></i>Authentic Guaranteed
+      </span>
+    </div>
+    
+    <!-- CTA Button -->
+    <div class="d-flex justify-content-center gap-4 flex-wrap">
+      <a href="#products-section" class="btn btn-lg px-5 py-3" style="background-color: #8b6f47; border: none; color: white; font-weight: 700; letter-spacing: 1.5px; font-size: 1rem; box-shadow: 0 6px 25px rgba(0,0,0,0.25); transition: all 0.3s ease; border-radius: 8px;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 35px rgba(0,0,0,0.35)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 25px rgba(0,0,0,0.25)';">
+        <i class="fas fa-shopping-bag me-2"></i>Shop Now
+      </a>
+    </div>
   </div>
 </header>
 
@@ -26,533 +62,822 @@ require_once __DIR__ . '/includes/header.php';
     $prods = [];
   }
   ?>
-  <!-- Tabs navigation -->
-  <ul class="nav nav-tabs justify-content-center mb-4" id="productTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">All</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="bracelets-tab" data-bs-toggle="tab" data-bs-target="#bracelets" type="button" role="tab" aria-controls="bracelets" aria-selected="false">Bracelets</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="earrings-tab" data-bs-toggle="tab" data-bs-target="#earrings" type="button" role="tab" aria-controls="earrings" aria-selected="false">Earrings</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="necklaces-tab" data-bs-toggle="tab" data-bs-target="#necklaces" type="button" role="tab" aria-controls="necklaces" aria-selected="false">Necklaces</button>
-    </li>
-  </ul>
-  <!-- Tabs content -->
-  <div class="tab-content" id="productTabsContent">
-    
-    <!-- All products -->
-    <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <?php
-        if (empty($prods)) {
-          echo '<div class="col"><p class="text-muted">No products available.</p></div>';
-        } else {
-          foreach ($prods as $p) {
-            $img = !empty($p['product_image']) ? htmlspecialchars($p['product_image']) : 'image/placeholder.png';
-            $name = htmlspecialchars($p['product_name']);
-            $price = '₱' . number_format((float)$p['product_price'], 2);
-        ?>
-            <div class="col">
-              <div class="card h-100 text-center product-card-large position-relative">
-                <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 rounded-circle wishlist-btn" 
-                        data-product-id="<?= $p['product_id'] ?>" 
-                        style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: none; background: rgba(255,255,255,0.9); z-index: 10; pointer-events: auto; cursor: pointer;">
-                  <span class="wishlist-icon" style="font-size: 1.2rem;">♡</span>
-                </button>
-                <img src="<?= $img ?>" class="card-img-top" alt="<?= $name ?>" style="position: relative; z-index: 1;">
-                <div class="card-body">
-                  <h5 class="card-title"><?= $name ?></h5>
-                  <p class="card-text text-muted mb-2"><?= $price ?></p>
-                  <a href="#" class="btn btn-primary w-100 add-to-cart" data-id="<?= $p['product_id'] ?>" data-name="<?= $name ?>" data-price="<?= htmlspecialchars((float)$p['product_price']) ?>" data-image="<?= $img ?>">Add to Cart</a>
-                </div>
-              </div>
-            </div>
-        <?php
-          }
-        }
-        ?>
-      </div>
-    </div>
-       
-   <!-- // Bracelets products -->
-    <div class="tab-pane fade" id="bracelets" role="tabpanel" aria-labelledby="bracelets-tab">
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <?php
-        $found = false;
-        foreach ($prods as $p) {
-          if (stripos($p['category'] ?? '', 'bracelet') === false) continue;
-          $found = true;
-          $img = !empty($p['product_image']) ? htmlspecialchars($p['product_image']) : 'image/placeholder.png';
-          $name = htmlspecialchars($p['product_name']);
-          $price = '₱' . number_format((float)$p['product_price'], 2);
-        ?>
-          <div class="col">
-            <div class="card h-100 text-center product-card-large position-relative">
-              <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 rounded-circle wishlist-btn" 
-                      data-product-id="<?= $p['product_id'] ?>" 
-                      style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: none; background: rgba(255,255,255,0.9); z-index: 10; pointer-events: auto; cursor: pointer;">
-                <span class="wishlist-icon" style="font-size: 1.2rem;">♡</span>
-              </button>
-              <img src="<?= $img ?>" class="card-img-top" alt="<?= $name ?>" style="position: relative; z-index: 1;">
-              <div class="card-body">
-                <h5 class="card-title"><?= $name ?></h5>
-                <p class="card-text text-muted mb-2"><?= $price ?></p>
-                <a href="#" class="btn btn-primary w-100 add-to-cart" data-id="<?= $p['product_id'] ?>" data-name="<?= $name ?>" data-price="<?= htmlspecialchars((float)$p['product_price']) ?>" data-image="<?= $img ?>">Add to Cart</a>
-              </div>
-            </div>
+<!-- MODERN CATEGORY FILTERS -->
+  <div class="container mb-5">
+    <div class="category-filters-wrapper">
+      <div class="filter-header d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 fw-bold">Shop by Category</h2>
+        <div class="view-options">
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary active view-toggle-btn" data-view="grid" title="Grid View">
+              <i class="fas fa-th"></i>
+            </button>
+            <button type="button" class="btn btn-outline-primary view-toggle-btn" data-view="list" title="List View">
+              <i class="fas fa-list"></i>
+            </button>
           </div>
-        <?php } if (!$found) echo '<div class="col"><p class="text-muted">No products available.</p></div>'; ?>
+        </div>
       </div>
-    </div>
-       
-    <!-- Earrings products -->
-    <div class="tab-pane fade" id="earrings" role="tabpanel" aria-labelledby="earrings-tab">
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <?php
-        $found = false;
-        foreach ($prods as $p) {
-          if (stripos($p['category'] ?? '', 'earring') === false) continue;
-          $found = true;
-          $img = !empty($p['product_image']) ? htmlspecialchars($p['product_image']) : 'image/placeholder.png';
-          $name = htmlspecialchars($p['product_name']);
-          $price = '₱' . number_format((float)$p['product_price'], 2);
-        ?>
-          <div class="col">
-            <div class="card h-100 text-center product-card-large position-relative">
-              <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 rounded-circle wishlist-btn" 
-                      data-product-id="<?= $p['product_id'] ?>" 
-                      style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: none; background: rgba(255,255,255,0.9); z-index: 10; pointer-events: auto; cursor: pointer;">
-                <span class="wishlist-icon" style="font-size: 1.2rem;">♡</span>
-              </button>
-              <img src="<?= $img ?>" class="card-img-top" alt="<?= $name ?>" style="position: relative; z-index: 1;">
-              <div class="card-body">
-                <h5 class="card-title"><?= $name ?></h5>
-                <p class="card-text text-muted mb-2"><?= $price ?></p>
-                <a href="#" class="btn btn-primary w-100 add-to-cart" data-id="<?= $p['product_id'] ?>" data-name="<?= $name ?>" data-price="<?= htmlspecialchars((float)$p['product_price']) ?>" data-image="<?= $img ?>">Add to Cart</a>
-              </div>
-            </div>
-          </div>
-        <?php } if (!$found) echo '<div class="col"><p class="text-muted">No products available.</p></div>'; ?>
-      </div>
-    </div>
-    
-    <!-- Necklaces products -->
-  <div class="tab-pane fade" id="necklaces" role="tabpanel" aria-labelledby="necklaces-tab">
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <?php
-        $found = false;
-        foreach ($prods as $p) {
-          if (stripos($p['category'] ?? '', 'necklace') === false) continue;
-          $found = true;
-          $img = !empty($p['product_image']) ? htmlspecialchars($p['product_image']) : 'image/placeholder.png';
-          $name = htmlspecialchars($p['product_name']);
-          $price = '₱' . number_format((float)$p['product_price'], 2);
-        ?>
-          <div class="col">
-            <div class="card h-100 text-center product-card-large position-relative">
-              <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 rounded-circle wishlist-btn" 
-                      data-product-id="<?= $p['product_id'] ?>" 
-                      style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: none; background: rgba(255,255,255,0.9); z-index: 10; pointer-events: auto; cursor: pointer;">
-                <span class="wishlist-icon" style="font-size: 1.2rem;">♡</span>
-              </button>
-              <img src="<?= $img ?>" class="card-img-top" alt="<?= $name ?>" style="position: relative; z-index: 1;">
-              <div class="card-body">
-                <h5 class="card-title"><?= $name ?></h5>
-                <p class="card-text text-muted mb-2"><?= $price ?></p>
-                <a href="#" class="btn btn-primary w-100 add-to-cart" data-id="<?= $p['product_id'] ?>" data-name="<?= $name ?>" data-price="<?= htmlspecialchars((float)$p['product_price']) ?>" data-image="<?= $img ?>">Add to Cart</a>
-              </div>
-            </div>
-          </div>
-        <?php } if (!$found) echo '<div class="col"><p class="text-muted">No products available.</p></div>'; ?>
-      </div>
-    </div>
 
+      <!-- Sort Section -->
+      <div class="row mb-4 align-items-end">
+        <div class="col-md-12">
+          <label for="sortSelect" class="form-label mb-2">Sort By</label>
+          <select class="form-select" id="sortSelect">
+            <option value="featured">Featured</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="newest">Newest First</option>
+            <option value="name-asc">Name: A-Z</option>
+          </select>
+        </div>
+      </div>
+      
+      <ul class="nav nav-pills modern-category-tabs justify-content-center mb-4" id="productTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active rounded-pill px-4 py-2" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true" data-category="all">
+            <i class="fas fa-gem me-2"></i>All Products
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link rounded-pill px-4 py-2" id="bracelets-tab" data-bs-toggle="tab" data-bs-target="#bracelets" type="button" role="tab" aria-controls="bracelets" aria-selected="false" data-category="Bracelet">
+            <i class="fas fa-circle-notch me-2"></i>Bracelets
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link rounded-pill px-4 py-2" id="earrings-tab" data-bs-toggle="tab" data-bs-target="#earrings" type="button" role="tab" aria-controls="earrings" aria-selected="false" data-category="Earrings">
+            <i class="fas fa-dot-circle me-2"></i>Earrings
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link rounded-pill px-4 py-2" id="necklaces-tab" data-bs-toggle="tab" data-bs-target="#necklaces" type="button" role="tab" aria-controls="necklaces" aria-selected="false" data-category="Necklace">
+            <i class="fas fa-link me-2"></i>Necklaces
+          </button>
+        </li>
+      </ul>
+      
+      <div class="products-toolbar d-flex justify-content-between align-items-center">
+        <div class="results-count">
+          <span class="text-muted">Showing <span id="productCount">0</span> products</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Tabs content -->
+  <div class="tab-content products-container" id="productTabsContent">
+    <!-- Products will be dynamically generated by JavaScript -->
   </div>
 </section>
 
-?>
+<!-- Comprehensive Product Page JavaScript -->
 <script>
-$(document).ready(function() {
-  // Initialize cart as empty
-  let cart = [];
-  
-  // Handle cart modal display
-  $('#cartModal').on('show.bs.modal', function() {
-    if (cart.length === 0) {
-      $('#emptyCart').show();
-      $('#cartItems').hide();
-      $('#cartFooter').hide();
-    } else {
-      $('#emptyCart').hide();
-      $('#cartItems').show();
-      $('#cartFooter').show();
-      updateCartDisplay();
-    }
-  });
-  
-  // Function to update cart display (for future use when items are added)
-  function updateCartDisplay() {
-    let total = 0;
-    let cartHtml = '';
-    
-    cart.forEach(function(item, index) {
-      total += item.price;
-      cartHtml += `
-        <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
-          <div class="d-flex align-items-center">
-            <img src="${item.image}" alt="${item.name}" class="me-3" style="width: 60px; height: 60px; object-fit: cover;">
-            <div>
-              <h6 class="mb-1">${item.name}</h6>
-              <small class="text-muted">₱${item.price.toFixed(2)}</small>
-            </div>
-          </div>
-          <div class="d-flex align-items-center">
-            <button class="btn btn-sm btn-outline-secondary me-2" onclick="removeFromCart(${index})">Remove</button>
-          </div>
-        </div>
-      `;
-    });
-    
-    $('.cart-item-list').html(cartHtml);
-    $('#cartTotal').text('₱' + total.toFixed(2));
-  }
-  
-  // Make functions globally available
-  window.addToCart = function(name, price, image) {
-    // Get existing cart from localStorage
-    let cart = JSON.parse(localStorage.getItem('jeweluxe_cart')) || [];
-    
-    // Check if item already exists
-    let existingItem = cart.find(item => item.name === name);
-    if (existingItem) {
-      existingItem.quantity = (existingItem.quantity || 1) + 1;
-    } else {
-      cart.push({
-        name: name, 
-        price: price, 
-        image: image,
-        quantity: 1,
-        sku: name.replace(/\s+/g, '').toUpperCase()
-      });
-    }
-    
-    // Save to localStorage
-    localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-    
-    // Update cart count in navbar if needed
-    console.log('Added to cart:', name);
-    // Local cart notification
-    showCartNotification(name + ' added to cart!');
-  };
+// Global product data
+let allProducts = <?php echo json_encode($prods); ?>;
+let currentView = 'grid';
+let currentSort = 'featured';
+let currentCategory = 'all';
 
-  // Show cart notification (local alert)
-  function showCartNotification(message) {
-    const notification = $('<div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 9999; border-radius: 6px;">' +
-      '<i class="fas fa-check-circle me-2"></i>' + message +
-      '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-      '</div>');
-    $('body').append(notification);
-    setTimeout(() => {
-      notification.alert('close');
-    }, 3000);
-  };
-  
-  window.removeFromCart = function(index) {
-    cart.splice(index, 1);
-    updateCartDisplay();
-    if (cart.length === 0) {
-      $('#emptyCart').show();
-      $('#cartItems').hide();
-      $('#cartFooter').hide();
-    }
-  };
-  
-  // Add click handlers to all "Add to Cart" buttons (only those inside product cards)
-  $('.card .btn-primary').click(function(e) {
-    e.preventDefault();
-    const btn = $(this);
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize functionality
+  updateCartBadge();
+  updateWishlistBadge();
+  initializeProductDisplay();
+  initializeSort();
+  initializeViewToggle();
+  initializeCategoryFilter();
+  initializeAddToCart();
+  initializeQuickView();
+  initializeWishlist();
+  initializeQuantitySelectors();
+  initializeCheckout();
+  initializeProductCardNavigation();
+});
 
-    // prefer data attributes if available (added to the anchor in PHP)
-    const productId = btn.data('id');
-    const name = btn.data('name') || btn.closest('.card').find('.card-title').text();
-    const price = parseFloat(btn.data('price')) || parseFloat(btn.closest('.card').find('.card-text').text().replace('₱', '').replace(/,/g, '')) || 0;
-    const image = btn.data('image') || btn.closest('.card').find('img').attr('src');
+// Initialize product display with filtering
+function initializeProductDisplay() {
+  let filteredProducts = filterAndSortProducts(allProducts);
+  updateProductDisplay(filteredProducts);
+  updateProductCount(filteredProducts.length);
+}
 
-    // Visual feedback on the button (show it's processing)
-    btn.text('Adding...').removeClass('btn-primary').addClass('btn-secondary').prop('disabled', true);
+// Filter and sort products
+function filterAndSortProducts(products) {
+  let filtered = products;
 
-    // Send add-to-cart request to server (relative path, no leading slash)
-    $.post('add_to_cart.php', { product_id: productId, quantity: 1 })
-      .done(function(resp) {
-          // Check if user needs to log in
-          if (resp && resp.error === 'Please log in to use the cart.') {
-            ToastNotification.warning('Please log in to add items to your cart.');
-            // Open account modal for login
-            setTimeout(() => {
-              const accountModal = new bootstrap.Modal(document.getElementById('accountModal'));
-              accountModal.show();
-            }, 500);
-            // Reset button
-            btn.text('Add to Cart').removeClass('btn-secondary').addClass('btn-primary').prop('disabled', false);
-            return;
-          }
-          
-          if (resp && resp.success) {
-            // NOW add to localStorage after server confirms
-            addToCart(name, price, image);
-            
-            // sync server-side item_id into localStorage cart
-            try {
-              const serverItem = resp.item;
-              let local = JSON.parse(localStorage.getItem('jeweluxe_cart')) || [];
-              // try to find by product_id
-              let found = local.find(it => (it.product_id && serverItem && serverItem.product_id && it.product_id == serverItem.product_id) || (it.name === name));
-              if (found) {
-                found.item_id = serverItem.item_id || found.item_id;
-                found.quantity = serverItem.quantity || found.quantity || 1;
-              } else {
-                local.push({
-                  item_id: serverItem.item_id || null,
-                  product_id: serverItem.product_id || productId || null,
-                  name: serverItem.name || name,
-                  price: parseFloat(serverItem.price) || price,
-                  image: serverItem.image || image,
-                  quantity: serverItem.quantity || 1,
-                  sku: (serverItem.name || name).replace(/\s+/g, '').toUpperCase()
-                });
-              }
-              localStorage.setItem('jeweluxe_cart', JSON.stringify(local));
-            } catch (e) {
-              console.error('Failed to sync cart with server response', e, resp);
-            }
-            // Reset button state after success
-            btn.text('Add to Cart').removeClass('btn-secondary').addClass('btn-primary').prop('disabled', false);
-            showCartNotification(name + ' added to cart!');
-          } else {
-            const msg = resp && resp.message ? resp.message : 'Could not add to cart.';
-            ToastNotification.error('Server error: ' + msg);
-            console.error('Add to cart response error:', resp);
-            // Reset button
-            btn.text('Add to Cart').removeClass('btn-secondary').addClass('btn-primary').prop('disabled', false);
-          }
-        })
-      .fail(function(xhr, status, err) {
-        ToastNotification.error('Server error adding to cart');
-        console.error('Add to cart AJAX failed:', status, err, xhr.responseText);
-        // Reset button
-        btn.text('Add to Cart').removeClass('btn-secondary').addClass('btn-primary').prop('disabled', false);
-      });
-  });
-
-  function displayCartModal() {
-    let cart = JSON.parse(localStorage.getItem('jeweluxe_cart')) || [];
-    
-    if (cart.length === 0) {
-      $('#emptyCart').show();
-      $('#cartItems').hide();
-      $('#cartFooter').hide();
-    } else {
-      $('#emptyCart').hide();
-      $('#cartItems').show();
-      $('#cartFooter').show();
-      updateCartModalDisplay();
-    }
+  // Filter by category
+  if (currentCategory && currentCategory !== 'all') {
+    filtered = filtered.filter(p => 
+      p.category && p.category.toLowerCase() === currentCategory.toLowerCase()
+    );
   }
 
-  function updateCartModalDisplay() {
-    let cart = JSON.parse(localStorage.getItem('jeweluxe_cart')) || [];
-    let cartHtml = '';
-    let subtotal = 0;
-    
-    cart.forEach(function(item, index) {
-      subtotal += item.price * (item.quantity || 1);
-      cartHtml += `
-        <div class="card mb-3">
-          <div class="card-body">
-            <div class="row align-items-center">
-              <div class="col-md-2">
-                <img src="${item.image}" alt="${item.name}" class="img-fluid rounded" style="height: 60px; object-fit: cover;">
-              </div>
-              <div class="col-md-4">
-                <h6 class="mb-1">${item.name}</h6>
-                <small class="text-muted">SKU: ${item.sku || 'N/A'}</small>
-              </div>
-              <div class="col-md-2">
-                <span class="fw-bold">₱${item.price.toFixed(2)}</span>
-              </div>
-              <div class="col-md-2">
-                <div class="input-group">
-                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="updateQuantity(${index}, -1)">-</button>
-                  <input type="number" class="form-control form-control-sm text-center" value="${item.quantity || 1}" min="1" max="10" onchange="updateQuantity(${index}, 0, this.value)">
-                  <button class="btn btn-outline-secondary btn-sm" type="button" onclick="updateQuantity(${index}, 1)">+</button>
+  // Sort products
+  switch(currentSort) {
+    case 'price-low':
+      filtered.sort((a, b) => parseFloat(a.product_price) - parseFloat(b.product_price));
+      break;
+    case 'price-high':
+      filtered.sort((a, b) => parseFloat(b.product_price) - parseFloat(a.product_price));
+      break;
+    case 'name-asc':
+      filtered.sort((a, b) => a.product_name.localeCompare(b.product_name));
+      break;
+    case 'newest':
+      filtered.reverse();
+      break;
+    default: // featured
+      break;
+  }
+
+  return filtered;
+}
+
+// Update product display
+function updateProductDisplay(products) {
+  const container = document.querySelector('.products-container');
+  if (!container) return;
+
+  let html = '<div class="tab-pane fade show active" role="tabpanel">';
+  html += currentView === 'grid' 
+    ? '<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">'
+    : '<div class="row">';
+
+  if (products.length === 0) {
+    html += '<div class="col"><p class="text-muted text-center">No products found.</p></div>';
+  } else {
+    products.forEach(p => {
+      const img = p.product_image || 'image/placeholder.png';
+      const name = p.product_name;
+      const price = '₱' + parseFloat(p.product_price).toFixed(2);
+      const originalPrice = '₱' + (parseFloat(p.product_price) * 1.2).toFixed(2);
+
+      if (currentView === 'grid') {
+        html += `
+          <div class="col">
+            <div class="modern-product-card h-100" data-detail-url="product_detail.php?id=${p.product_id}">
+              <div class="product-image-container position-relative overflow-hidden">
+                <img src="${img}" class="product-main-image w-100" alt="${name}" style="height: 300px; object-fit: cover; transition: transform 0.3s ease;">
+                
+                <div class="product-badges position-absolute top-0 start-0 p-3">
+                  <span class="badge bg-danger me-1">New</span>
+                  <span class="badge bg-success">-20%</span>
+                </div>
+                
+                <button class="btn btn-light btn-sm position-absolute top-0 end-0 m-2 rounded-circle wishlist-btn shadow-sm" 
+                        data-product-id="${p.product_id}" 
+                        style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border: none; background: rgba(255,255,255,0.95); z-index: 10; cursor: pointer;">
+                  <i class="far fa-heart wishlist-icon text-danger"></i>
+                </button>
+                
+                <div class="product-quick-actions position-absolute bottom-0 start-0 w-100 p-3">
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-light btn-sm flex-fill quick-view-btn" data-product-id="${p.product_id}" data-product-name="${name}" data-product-price="${p.product_price}" data-product-image="${img}">
+                      <i class="fas fa-eye me-1"></i>Quick View
+                    </button>
+                    <button class="btn btn-primary btn-sm flex-fill add-to-cart" 
+                            data-id="${p.product_id}" 
+                            data-name="${name}" 
+                            data-price="${p.product_price}" 
+                            data-image="${img}">
+                      <i class="fas fa-shopping-cart me-1"></i>Add to Cart
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-2 text-end">
-                <span class="fw-bold">₱${((item.quantity || 1) * item.price).toFixed(2)}</span>
-                <br>
-                <button class="btn btn-outline-danger btn-sm mt-1" onclick="removeFromCart(${index})">
-                  <i class="fas fa-trash"></i>
+              
+              <div class="product-info p-3">
+                <div class="product-category text-muted small mb-2">
+                  <i class="fas fa-tag me-1"></i>${(p.category || 'Jewelry').charAt(0).toUpperCase() + (p.category || 'Jewelry').slice(1)}
+                </div>
+                
+                <h5 class="product-title fw-bold mb-2"><a href="product_detail.php?id=${p.product_id}" class="text-decoration-none text-dark">${name}</a></h5>
+                
+                <div class="product-rating mb-2">
+                  <div class="stars text-warning">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star-half-alt"></i>
+                  </div>
+                  <small class="text-muted ms-1">(4.5)</small>
+                </div>
+                
+                <div class="product-price d-flex align-items-center justify-content-between mb-3">
+                  <div>
+                    <span class="current-price h5 text-primary fw-bold mb-0">${price}</span>
+                    <span class="original-price text-muted small ms-2"><del>${originalPrice}</del></span>
+                  </div>
+                  <div class="discount-badge">
+                    <span class="badge bg-success">Save 20%</span>
+                  </div>
+                </div>
+                
+                <button class="btn btn-primary w-100 rounded-pill add-to-cart" 
+                        data-id="${p.product_id}" 
+                        data-name="${name}" 
+                        data-price="${p.product_price}" 
+                        data-image="${img}">
+                  <i class="fas fa-shopping-cart me-2"></i>Add to Cart
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        // List view
+        html += `
+          <div class="col-12 mb-3">
+            <div class="card product-list-card" data-detail-url="product_detail.php?id=${p.product_id}">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col-md-2">
+                    <img src="${img}" alt="${name}" class="img-fluid rounded" style="height: 120px; object-fit: cover;">
+                  </div>
+                  <div class="col-md-5">
+                    <h5 class="card-title"><a href="product_detail.php?id=${p.product_id}" class="text-decoration-none text-dark">${name}</a></h5>
+                    <p class="text-muted mb-2">${(p.category || 'Jewelry').charAt(0).toUpperCase() + (p.category || 'Jewelry').slice(1)}</p>
+                    <div class="stars text-warning">
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star-half-alt"></i>
+                      <small class="text-muted ms-2">(4.5)</small>
+                    </div>
+                  </div>
+                  <div class="col-md-2 text-center">
+                    <h5 class="text-primary">${price}</h5>
+                    <small class="text-muted"><del>${originalPrice}</del></small>
+                  </div>
+                  <div class="col-md-3 text-end">
+                    <button class="btn btn-sm btn-light me-2 wishlist-btn" data-product-id="${p.product_id}">
+                      <i class="far fa-heart wishlist-icon text-danger"></i>
+                    </button>
+                    <button class="btn btn-sm btn-info me-2 quick-view-btn" data-product-id="${p.product_id}" data-product-name="${name}" data-product-price="${p.product_price}" data-product-image="${img}">
+                      <i class="fas fa-eye"></i> View
+                    </button>
+                    <button class="btn btn-sm btn-primary add-to-cart" 
+                            data-id="${p.product_id}" 
+                            data-name="${name}" 
+                            data-price="${p.product_price}" 
+                            data-image="${img}">
+                      <i class="fas fa-cart-plus"></i> Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
     });
-    
-    $('.cart-item-list').html(cartHtml);
-    $('#cartTotal').text('₱' + subtotal.toFixed(2));
   }
 
-  // Global functions for cart management
-  window.updateQuantity = function(index, change, newValue) {
-    if (newValue !== undefined) {
-      cart[index].quantity = parseInt(newValue);
-    } else {
-      cart[index].quantity = (cart[index].quantity || 1) + change;
-    }
-    if (cart[index].quantity < 1) {
-      cart[index].quantity = 1;
-    }
-    
-    // If this item exists on server (has item_id), update server as well
-    const item = cart[index];
-    if (item && item.item_id) {
-      $.post('update_cart.php', { item_id: item.item_id, quantity: item.quantity })
-        .done(function(resp) {
-          if (resp && resp.success) {
-            // reflect any canonical quantity from server
-            item.quantity = resp.quantity || item.quantity;
-            localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-            updateCartDisplay();
-          } else {
-            console.error('Failed to update cart on server', resp);
-            // fallback: still update locally
-            localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-            updateCartDisplay();
-          }
-        })
-        .fail(function(xhr, status, err) {
-          console.error('update_cart.php request failed', status, err, xhr.responseText);
-          // fallback to local update
-          localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-          updateCartDisplay();
-        });
-    } else {
-      // local-only item
-      localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-      updateCartDisplay();
-    }
-  };
-  
-  // Remove from cart
-  window.removeFromCart = function(index) {
-    const item = cart[index];
-    if (item && item.item_id) {
-      // ask server to remove
-      $.post('remove_from_cart.php', { item_id: item.item_id })
-        .done(function(resp) {
-          if (resp && resp.success) {
-            cart.splice(index, 1);
-            localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-            displayCart();
-          } else {
-            console.error('Server failed to remove item', resp);
-            // still remove locally to keep UX responsive
-            cart.splice(index, 1);
-            localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-            displayCart();
-          }
-        })
-        .fail(function(xhr, status, err) {
-          console.error('remove_from_cart.php request failed', status, err, xhr.responseText);
-          // fallback: remove locally
-          cart.splice(index, 1);
-          localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-          displayCart();
-        });
-    } else {
-      // local-only item
-      cart.splice(index, 1);
-      localStorage.setItem('jeweluxe_cart', JSON.stringify(cart));
-      displayCart();
-    }
-  };
+  html += '</div></div>';
+  container.innerHTML = html;
 
-  // Wishlist functionality
-  document.querySelectorAll('.wishlist-btn').forEach(btn => {
+  // Re-attach event listeners to new elements (not needed for wishlist/add-to-cart with event delegation)
+  initializeQuickView();
+  initializeProductCardNavigation();
+}
+
+function updateProductCount(count) {
+  const countElement = document.getElementById('productCount');
+  if (countElement) countElement.textContent = count;
+}
+
+// Initialize sort functionality
+function initializeSort() {
+  const sortSelect = document.getElementById('sortSelect');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', function(e) {
+      currentSort = e.target.value;
+      initializeProductDisplay();
+    });
+  }
+}
+
+// Initialize category filter
+function initializeCategoryFilter() {
+  const categoryButtons = document.querySelectorAll('[data-category]');
+  categoryButtons.forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      currentCategory = this.dataset.category || 'all';
+      initializeProductDisplay();
+    });
+  });
+}
+
+// Initialize grid/list view toggle
+function initializeViewToggle() {
+  document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      currentView = this.dataset.view;
+      document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      initializeProductDisplay();
+    });
+  });
+}
+
+// Navigate to detail page when clicking a product card (excluding interactive controls)
+function initializeProductCardNavigation() {
+  document.querySelectorAll('.modern-product-card, .product-list-card').forEach(card => {
+    if (card.dataset.navBound === '1') return;
+    card.dataset.navBound = '1';
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('button, a, input, select, textarea, .quick-view-btn, .wishlist-btn, .add-to-cart')) return;
+      const url = card.getAttribute('data-detail-url');
+      if (url) window.location.href = url;
+    });
+  });
+}
+
+// Initialize add to cart - using event delegation to avoid duplicate listeners
+let addToCartInitialized = false;
+
+function initializeAddToCart() {
+  // Only attach the main event listener once
+  if (addToCartInitialized) return;
+  addToCartInitialized = true;
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.add-to-cart');
+    if (!btn) return;
+
+    e.preventDefault();
+
+    const productId = btn.dataset.id;
+    const name = btn.dataset.name;
+    const price = parseFloat(btn.dataset.price);
+    const image = btn.dataset.image;
+
+    btn.textContent = 'Adding...';
+    btn.disabled = true;
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-secondary');
+
+    // Start fetching cart data immediately for faster badge update
+    const cartFetch = fetch('get_cart.php').then(r => r.json());
+
+    fetch('add_to_cart.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'product_id=' + productId + '&quantity=1'
+    })
+    .then(response => response.json())
+    .then(resp => {
+      if (resp && resp.error === 'Please log in to use the cart.') {
+        showToast('Please log in to add items to your cart', 'warning');
+        setTimeout(() => {
+          const accountModal = new bootstrap.Modal(document.getElementById('accountModal'));
+          accountModal.show();
+        }, 500);
+        btn.textContent = 'Add to Cart';
+        btn.disabled = false;
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-secondary');
+        return;
+      }
+      
+      if (resp && resp.success) {
+        // Update badge with cart data (use cached fetch from above)
+        cartFetch.then(cartData => {
+          if (cartData && cartData.success && cartData.cart && cartData.cart.items) {
+            let totalItems = cartData.cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+            const cartBadge = document.querySelector('.cart-count');
+            if (cartBadge) {
+              cartBadge.textContent = totalItems;
+              cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+            }
+          }
+        }).catch(error => console.error('Error updating cart badge:', error));
+
+        btn.textContent = 'Added!';
+        setTimeout(() => {
+          btn.textContent = 'Add to Cart';
+          btn.disabled = false;
+          btn.classList.add('btn-primary');
+          btn.classList.remove('btn-secondary');
+        }, 1500);
+        showToast(name + ' added to cart!', 'success');
+      } else {
+        showToast('Could not add to cart', 'error');
+        btn.textContent = 'Add to Cart';
+        btn.disabled = false;
+        btn.classList.add('btn-primary');
+        btn.classList.remove('btn-secondary');
+      }
+    })
+    .catch(error => {
+      showToast('Server error', 'error');
+      btn.textContent = 'Add to Cart';
+      btn.disabled = false;
+      btn.classList.add('btn-primary');
+      btn.classList.remove('btn-secondary');
+    });
+  });
+}
+
+// Add to cart helper
+function addToCart(name, price, image) {
+  // For logged-in users, the database is the source of truth
+  // Just trigger a badge update from server data
+  updateCartBadge();
+}
+
+// Update cart badge count
+function updateCartBadge() {
+  const $body = document.querySelector('body');
+  const isLoggedIn = $body.getAttribute('data-logged-in') === '1';
+  
+  if (isLoggedIn) {
+    // For logged-in users, fetch from server (database is source of truth)
+    fetch('get_cart.php')
+      .then(response => response.json())
+      .then(data => {
+        if (data && data.success && data.cart && data.cart.items) {
+          let totalItems = data.cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+          const cartBadge = document.querySelector('.cart-count');
+          if (cartBadge) {
+            cartBadge.textContent = totalItems;
+            cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+          }
+        }
+      })
+      .catch(error => console.error('Error updating cart badge:', error));
+  } else {
+    // For guests, use localStorage
+    let cart = JSON.parse(localStorage.getItem('jeweluxe_cart')) || [];
+    let totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    const cartBadge = document.querySelector('.cart-count');
+    if (cartBadge) {
+      cartBadge.textContent = totalItems;
+      cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+    }
+  }
+}
+
+// Update wishlist badge count
+function updateWishlistBadge() {
+  const wishlistBadge = document.querySelector('.wishlist-count');
+  if (wishlistBadge) {
+    fetch('get_wishlist.php')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.wishlist) {
+          wishlistBadge.textContent = data.wishlist.length;
+        }
+      })
+      .catch(error => console.error('Error updating wishlist badge:', error));
+  }
+}
+
+// Initialize quick view
+function initializeQuickView() {
+  // Get or create modal instance once
+  const modalElement = document.getElementById('quickViewModal');
+  let quickViewModalInstance = bootstrap.Modal.getInstance(modalElement);
+  if (!quickViewModalInstance) {
+    quickViewModalInstance = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: true });
+  }
+
+  // Handle close button and backdrop properly
+  modalElement.addEventListener('hidden.bs.modal', function () {
+    // Ensure backdrop is removed
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+      backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
+  });
+
+  document.querySelectorAll('.quick-view-btn').forEach(btn => {
     btn.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
       
       const productId = this.dataset.productId;
-      const icon = this.querySelector('.wishlist-icon');
-      
-      // Check if user is logged in
-      if (!<?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>) {
-        ToastNotification.warning('Please log in to use the wishlist.');
-        setTimeout(() => window.location.href = 'login.php?redirect=products.php', 1500);
-        return;
-      }
-      
-      fetch('add_to_wishlist.php', {
+      const productName = this.dataset.productName;
+      const productPrice = parseFloat(this.dataset.productPrice);
+      const productImage = this.dataset.productImage;
+
+      document.getElementById('quickViewImage').src = productImage;
+      document.getElementById('quickViewName').textContent = productName;
+      document.getElementById('quickViewPrice').textContent = '₱' + productPrice.toFixed(2);
+      document.getElementById('quickViewOriginal').innerHTML = '<del>₱' + (productPrice * 1.2).toFixed(2) + '</del>';
+      document.getElementById('quickViewQuantity').value = 1;
+
+      // Store product info for add to cart
+      document.getElementById('quickViewAddToCart').dataset.productId = productId;
+      document.getElementById('quickViewAddToCart').dataset.productName = productName;
+      document.getElementById('quickViewAddToCart').dataset.productPrice = productPrice;
+      document.getElementById('quickViewAddToCart').dataset.productImage = productImage;
+
+      // Show the modal using the same instance
+      quickViewModalInstance.show();
+    });
+  });
+}
+
+// Initialize quantity selectors
+function initializeQuantitySelectors() {
+  const quantityInput = document.getElementById('quickViewQuantity');
+  if (quantityInput) {
+    const decBtn = document.getElementById('decreaseQty');
+    const incBtn = document.getElementById('increaseQty');
+
+    const clamp = (val) => {
+      const num = isNaN(parseInt(val, 10)) ? 1 : parseInt(val, 10);
+      if (num < 1) return 1;
+      if (num > 99) return 99;
+      return num;
+    };
+
+    const setQty = (val) => {
+      const clamped = clamp(val);
+      quantityInput.value = clamped;
+      return clamped;
+    };
+
+    if (decBtn) {
+      decBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        setQty(clamp(quantityInput.value) - 1);
+      });
+    }
+
+    if (incBtn) {
+      incBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        setQty(clamp(quantityInput.value) + 1);
+      });
+    }
+
+    quantityInput.addEventListener('change', function() {
+      setQty(quantityInput.value);
+    });
+
+    quantityInput.addEventListener('blur', function() {
+      setQty(quantityInput.value);
+    });
+
+    // Quick view add to cart
+    document.getElementById('quickViewAddToCart').addEventListener('click', function() {
+      const quantity = parseInt(document.getElementById('quickViewQuantity').value);
+      const productId = this.dataset.productId;
+      const name = this.dataset.productName;
+      const price = parseFloat(this.dataset.productPrice);
+      const image = this.dataset.productImage;
+
+      this.textContent = 'Adding...';
+      this.disabled = true;
+
+      // Start fetching cart data immediately for faster badge update
+      const cartFetch = fetch('get_cart.php').then(r => r.json());
+
+      fetch('add_to_cart.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: 'product_id=' + productId
+        body: 'product_id=' + productId + '&quantity=' + quantity
       })
       .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          if (data.action === 'added') {
-            icon.textContent = '♥';
-            icon.style.color = '#e74c3c';
-            this.style.background = 'rgba(231, 76, 60, 0.15)';
-            showCartNotification(data.message);
-          } else if (data.action === 'removed') {
-            icon.textContent = '♡';
-            icon.style.color = 'inherit';
-            this.style.background = 'rgba(255,255,255,0.9)';
-            showCartNotification(data.message);
+      .then(resp => {
+        if (resp && resp.success) {
+          // Update badge with cart data (use cached fetch from above)
+          cartFetch.then(cartData => {
+            if (cartData && cartData.success && cartData.cart && cartData.cart.items) {
+              let totalItems = cartData.cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+              const cartBadge = document.querySelector('.cart-count');
+              if (cartBadge) {
+                cartBadge.textContent = totalItems;
+                cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+              }
+            }
+          }).catch(error => console.error('Error updating cart badge:', error));
+
+          showToast('Added ' + quantity + ' item(s) to cart!', 'success');
+          const modal = bootstrap.Modal.getInstance(document.getElementById('quickViewModal'));
+          if (modal) {
+            modal.hide();
           }
+          this.textContent = 'Add to Cart';
+          this.disabled = false;
         } else {
-          ToastNotification.error(data.message || 'Error updating wishlist.');
+          showToast('Could not add to cart', 'error');
+          this.textContent = 'Add to Cart';
+          this.disabled = false;
         }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        ToastNotification.error('An error occurred.');
       });
     });
-  });
+  }
+}
 
-  // Load current wishlist state on page load
-  <?php if (!empty($_SESSION['user_id'])): ?>
-  fetch('get_wishlist.php')
+// Initialize wishlist - using event delegation to avoid duplicate listeners
+let wishlistInitialized = false;
+
+function initializeWishlist() {
+  // Only attach the main event listener once
+  if (wishlistInitialized) return;
+  wishlistInitialized = true;
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.wishlist-btn');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const productId = btn.dataset.productId;
+    const icon = btn.querySelector('.wishlist-icon');
+    
+    if (!<?php echo !empty($_SESSION['user_id']) ? 'true' : 'false'; ?>) {
+      showToast('Please log in to use the wishlist', 'warning');
+      setTimeout(() => {
+        const accountModal = new bootstrap.Modal(document.getElementById('accountModal'));
+        accountModal.show();
+      }, 500);
+      return;
+    }
+    
+    fetch('add_to_wishlist.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'product_id=' + productId
+    })
     .then(response => response.json())
     .then(data => {
-      if (data.success && data.wishlist) {
-        const wishlistIds = data.wishlist;
-        document.querySelectorAll('.wishlist-btn').forEach(btn => {
-          const productId = parseInt(btn.dataset.productId);
-          if (wishlistIds.includes(productId)) {
-            const icon = btn.querySelector('.wishlist-icon');
-            icon.textContent = '♥';
-            icon.style.color = '#e74c3c';
-            btn.style.background = 'rgba(231, 76, 60, 0.15)';
+      if (data.success) {
+        if (data.action === 'added') {
+          // Just highlight the heart with red
+          if (icon) {
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+            icon.style.color = '#dc3545';
           }
-        });
+          showToast('Added to wishlist', 'success');
+          updateWishlistBadge();
+        } else if (data.action === 'removed') {
+          // Remove the red highlight
+          if (icon) {
+            icon.classList.remove('fas');
+            icon.classList.add('far');
+            icon.style.color = '';
+          }
+          showToast('Removed from wishlist', 'info');
+          updateWishlistBadge();
+        }
+      } else {
+        showToast('Error updating wishlist', 'error');
       }
     })
-    .catch(error => console.error('Error loading wishlist:', error));
-  <?php endif; ?>
-});
+    .catch(error => {
+      console.error('Error:', error);
+      showToast('An error occurred', 'error');
+    });
+  });
+}
+
+// Initialize checkout
+function initializeCheckout() {
+  const checkoutBtn = document.querySelector('[data-checkout]');
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', function() {
+      const cart = JSON.parse(localStorage.getItem('jeweluxe_cart')) || [];
+      if (cart.length === 0) {
+        showToast('Your cart is empty', 'warning');
+        return;
+      }
+      window.location.href = 'checkout.php';
+    });
+  }
+}
+
+// Toast notification helper
+function showToast(message, type = 'info') {
+  const types = {
+    'success': 'alert-success',
+    'error': 'alert-danger',
+    'warning': 'alert-warning',
+    'info': 'alert-info'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = 'alert ' + (types[type] || types['info']) + ' alert-dismissible fade show position-fixed';
+  toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; border-radius: 6px;';
+  toast.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 2000);
+}
+
+// Load wishlist on page load
+<?php if (!empty($_SESSION['user_id'])): ?>
+fetch('get_wishlist.php')
+  .then(response => response.json())
+  .then(data => {
+    if (data.success && data.wishlist) {
+      const wishlistIds = data.wishlist;
+      document.querySelectorAll('.wishlist-btn').forEach(btn => {
+        const productId = parseInt(btn.dataset.productId);
+        if (wishlistIds.includes(productId)) {
+          const icon = btn.querySelector('.wishlist-icon');
+          if (icon) {
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+            icon.style.color = '#dc3545';
+          }
+        }
+      });
+    }
+  })
+  .catch(error => console.error('Error loading wishlist:', error));
+<?php endif; ?>
 </script>
+
+<!-- QUICK VIEW MODAL -->
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="quickViewModalLabel">Product Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-5">
+            <img id="quickViewImage" src="" class="img-fluid rounded" alt="Product">
+          </div>
+          <div class="col-md-7">
+            <h3 id="quickViewName"></h3>
+            <div id="quickViewRating" class="mb-3">
+              <div class="stars text-warning mb-2">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star-half-alt"></i>
+              </div>
+              <small class="text-muted">(4.5 out of 5 stars)</small>
+            </div>
+            <div class="mb-3">
+              <span id="quickViewPrice" class="h4 text-primary fw-bold"></span>
+              <span id="quickViewOriginal" class="text-muted ms-2"><del></del></span>
+            </div>
+            <p id="quickViewCategory" class="text-muted mb-3"></p>
+            <p id="quickViewDescription" class="mb-3">Premium jewelry crafted with attention to detail. Perfect for any occasion.</p>
+            
+            <!-- Quantity Selector -->
+            <div class="mb-3">
+              <label class="form-label">Quantity:</label>
+              <div class="quantity-selector" style="width: fit-content;">
+                <button type="button" id="decreaseQty">-</button>
+                <input type="number" id="quickViewQuantity" value="1" min="1" max="99" aria-label="Quantity">
+                <button type="button" id="increaseQty">+</button>
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button class="btn btn-primary btn-lg" id="quickViewAddToCart">
+                <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+              </button>
+              <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+              </button>
+            </div>
+
+            <div class="mt-4 pt-3 border-top">
+              <div class="row text-center">
+                <div class="col-4">
+                  <i class="fas fa-truck text-primary mb-2" style="font-size: 1.5rem;"></i>
+                  <small class="d-block">Free Shipping</small>
+                </div>
+                <div class="col-4">
+                  <i class="fas fa-shield-alt text-success mb-2" style="font-size: 1.5rem;"></i>
+                  <small class="d-block">Secure Payment</small>
+                </div>
+                <div class="col-4">
+                  <i class="fas fa-undo text-info mb-2" style="font-size: 1.5rem;"></i>
+                  <small class="d-block">Easy Returns</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <?php include __DIR__ . '/includes/footer.php';
 ?>

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/init_session.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/includes/auth.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -20,6 +21,13 @@ $user_id = (int) $_SESSION['user_id'];
 // Validate POST data
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
+    exit();
+}
+
+// Verify CSRF token
+$token = $_POST['csrf_token'] ?? '';
+if (!verify_csrf_token($token)) {
+    echo json_encode(['success' => false, 'message' => 'Invalid security token. Please refresh and try again.']);
     exit();
 }
 
@@ -60,10 +68,22 @@ $cart_sql = "SELECT ci.cart_item_id AS item_id, ci.cart_id, ci.product_id, ci.qu
 
 $stmt = $pdo->prepare($cart_sql);
 $stmt->execute([':uid' => $user_id]);
-$cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$all_cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Filter to only selected items if selectedItems is provided
+$cart_items = $all_cart_items;
+if (isset($_POST['selectedItems']) && !empty($_POST['selectedItems'])) {
+    $selected_items = json_decode($_POST['selectedItems'], true);
+    if (is_array($selected_items)) {
+        $selected_item_ids = array_map('intval', $selected_items);
+        $cart_items = array_filter($all_cart_items, function($item) use ($selected_item_ids) {
+            return in_array((int)$item['item_id'], $selected_item_ids);
+        });
+    }
+}
 
 if (count($cart_items) === 0) {
-    echo json_encode(['success' => false, 'message' => 'Your cart is empty.']);
+    echo json_encode(['success' => false, 'message' => 'Your cart is empty or no items selected.']);
     exit();
 }
 

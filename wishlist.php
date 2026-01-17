@@ -149,6 +149,9 @@ include 'includes/header.php';
             btn.addEventListener('click', function() {
                 const productId = this.dataset.productId;
                 
+                // Start fetching cart data immediately for faster badge update
+                const cartFetch = fetch('get_cart.php').then(r => r.json());
+                
                 fetch('add_to_cart.php', {
                     method: 'POST',
                     headers: {
@@ -170,6 +173,18 @@ include 'includes/header.php';
                     }
                     
                     if (data.success) {
+                        // Update cart badge with data fetched in parallel
+                        cartFetch.then(cartData => {
+                            if (cartData && cartData.success && cartData.cart && cartData.cart.items) {
+                                let totalItems = cartData.cart.items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+                                const cartBadge = document.querySelector('.cart-count');
+                                if (cartBadge) {
+                                    cartBadge.textContent = totalItems;
+                                    cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                                }
+                            }
+                        }).catch(error => console.error('Error updating cart badge:', error));
+                        }
                         ToastNotification.success('Added to cart!');
                     } else {
                         ToastNotification.error(data.message || 'Failed to add to cart.');

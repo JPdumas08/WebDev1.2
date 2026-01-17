@@ -13,19 +13,16 @@ try {
     $s->execute([':user_id' => $user_id]);
     $cart = $s->fetch();
     if (!$cart) {
-        echo json_encode(['success' => true, 'cleared' => true, 'message' => 'no_cart']);
+        echo json_encode(['success' => true, 'message' => 'no_cart']);
         exit;
     }
     $cart_id = (int)$cart['cart_id'];
 
-    // Delete items only for this cart (use cart_items table)
+    // Delete items from this cart
     $d = $pdo->prepare('DELETE FROM cart_items WHERE cart_id = :cart_id');
-    $d->execute([':cart_id' => $cart_id]);
+    $result = $d->execute([':cart_id' => $cart_id]);
 
-    // Optionally remove the cart row too. We'll keep the row but you can uncomment below to remove it.
-    // $pdo->prepare('DELETE FROM cart WHERE cart_id = :cart_id')->execute([':cart_id' => $cart_id]);
-
-    echo json_encode(['success' => true, 'cleared' => true]);
+    echo json_encode(['success' => true, 'message' => 'cart_cleared']);
     exit;
 
 } catch (Exception $e) {

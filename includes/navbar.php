@@ -6,35 +6,104 @@ init_session();
 
 $user = current_user();
 ?>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand text-start" href="home.php">← Jeweluxe</a>
+<!-- MODERN ECOMMERCE NAVIGATION -->
+<nav class="navbar navbar-expand-lg modern-navbar">
+  <div class="container">
+    <!-- Brand -->
+    <a class="navbar-brand fw-bold" href="home.php">
+      <i class="fas fa-gem brand-icon me-2"></i>
+      <span class="brand-text">Jeweluxe</span>
+    </a>
+
+    <!-- Mobile Toggle -->
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-        <ul class="navbar-nav mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="products.php">Products</a></li>
-        <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
-          <li class="nav-item"><a class="nav-link" href="contactus.php">Contact</a></li>
-          <li class="nav-item" id="cartNav"><a class="nav-link" href="#" id="cartLink">🛒 Cart</a></li>
+
+    <!-- Main Navigation -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav mx-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="home.php">
+            <i class="fas fa-home me-1"></i>Home
+          </a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link" href="products.php">
+            <i class="fas fa-shopping-bag me-1"></i>Products
+          </a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link" href="about.php">
+            <i class="fas fa-info-circle me-1"></i>About
+          </a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link" href="contactus.php">
+            <i class="fas fa-envelope me-1"></i>Contact
+          </a>
+        </li>
+      </ul>
+
+      <!-- Action Icons -->
+      <ul class="navbar-nav ms-auto">
+        <!-- Wishlist -->
+        <li class="nav-item">
+          <a class="nav-link" href="wishlist.php">
+            <i class="far fa-heart"></i>
+            <span class="wishlist-count badge bg-danger">0</span>
+          </a>
+        </li>
+        
+        <!-- Cart -->
+        <li class="nav-item">
+          <a class="nav-link cart-toggle" href="#" id="cartLink">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="cart-count badge bg-danger">0</span>
+          </a>
+        </li>
+        
+        <!-- User Account -->
         <?php if (!empty($user)): ?>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <img src="image/user.svg" alt="Account" class="me-2" style="height:1.25em; width:1.25em; vertical-align:middle;"><?= htmlspecialchars($user['first_name'] ?? $user['username'] ?? 'Account') ?></a>
-<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
-              <li><a class="dropdown-item" href="account_settings.php">Account Settings</a></li>
-              <li><a class="dropdown-item" href="notifications.php">Notifications</a></li>
-              <li><a class="dropdown-item" href="order_history.php">Order History</a></li>
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <div class="user-avatar me-2">
+                <i class="fas fa-user-circle"></i>
+              </div>
+              <span class="user-name d-none d-md-inline"><?= htmlspecialchars($user['first_name'] ?? $user['username'] ?? 'Account') ?></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+              <li class="dropdown-header">My Account</li>
+              <li><a class="dropdown-item" href="account_settings.php">
+                <i class="fas fa-cog me-2"></i>Account Settings
+              </a></li>
+              <li><a class="dropdown-item" href="wishlist.php">
+                <i class="fas fa-heart me-2"></i>My Wishlist
+              </a></li>
+              <li><a class="dropdown-item" href="order_history.php">
+                <i class="fas fa-history me-2"></i>Order History
+              </a></li>
+              <li><a class="dropdown-item" href="notifications.php">
+                <i class="fas fa-bell me-2"></i>Notifications
+              </a></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="logout.php">Logout</a></li>
+              <li><a class="dropdown-item text-danger" href="logout.php">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+              </a></li>
             </ul>
           </li>
         <?php else: ?>
-          <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#accountModal"><img src="image/user.svg" alt="Account" class="me-2" style="height:1.25em; width:1.25em; vertical-align:middle;">Account</a></li>
+          <li class="nav-item">
+            <a class="nav-link login-toggle" href="#" data-bs-toggle="modal" data-bs-target="#accountModal">
+              <i class="fas fa-user-circle me-1"></i>
+              <span class="d-none d-md-inline">Sign In</span>
+            </a>
+          </li>
         <?php endif; ?>
       </ul>
     </div>
   </div>
-</nav>
+</nav></div>

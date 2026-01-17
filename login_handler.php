@@ -1,8 +1,20 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/validation.php';
 require_once __DIR__ . '/db.php';
 
 init_session();
+
+// Check rate limiting (5 attempts per 15 minutes)
+if (!check_rate_limit('login', 5, 900)) {
+    if (wants_json()) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'too_many_attempts', 'message' => 'Too many login attempts. Please try again later.']);
+        exit;
+    }
+    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=rate_limit');
+    exit;
+}
 
 // Helper to detect AJAX / JSON requests
 function wants_json() {
@@ -36,6 +48,13 @@ function normalize_redirect(string $raw = ''): string {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /');
+    exit;
+}
+
+// Verify CSRF token
+$token = $_POST['csrf_token'] ?? '';
+if (!verify_csrf_token($token)) {
+    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/') . '?login=csrf');
     exit;
 }
 
@@ -126,7 +145,7 @@ try {
     // redirect back to the intended page and show a one-time success flag
     $redirect = normalize_redirect($_POST['redirect_to'] ?? 'home.php');
     $separator = (strpos($redirect, '?') === false) ? '?' : '&';
-    header('Location: ' . $redirect . $separator . 'login=ok');
+    header('Location: ' . $redirect . $separator . 'login=ok&refresh_badges=1');
     exit;
 
 } catch (Exception $e) {

@@ -7,6 +7,38 @@ require_once __DIR__ . '/includes/auth.php';
 // Ensure session is started and normalized
 init_session();
 
+// Session security: Check for session hijacking
+if (!empty($_SESSION['user_id'])) {
+    // Validate user agent (basic check)
+    $current_ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    if (isset($_SESSION['user_agent'])) {
+        if ($_SESSION['user_agent'] !== $current_ua) {
+            // Possible session hijacking - log out user
+            error_log('Possible session hijacking detected for user_id: ' . $_SESSION['user_id']);
+            session_destroy();
+            session_start();
+            header('Location: login.php?error=session_invalid');
+            exit;
+        }
+    } else {
+        // Store user agent on first authenticated request
+        $_SESSION['user_agent'] = $current_ua;
+    }
+    
+    // Session timeout check (2 hours of inactivity)
+    $timeout = 7200; // 2 hours in seconds
+    if (isset($_SESSION['last_activity'])) {
+        if (time() - $_SESSION['last_activity'] > $timeout) {
+            // Session expired
+            session_destroy();
+            session_start();
+            header('Location: login.php?error=session_expired');
+            exit;
+        }
+    }
+    $_SESSION['last_activity'] = time();
+}
+
 // Normalize user data into $_SESSION['user_id'] for compatibility
 if (!empty($_SESSION['user'])) {
     // Prefer direct user_id if already set

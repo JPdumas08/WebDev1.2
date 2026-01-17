@@ -2,24 +2,60 @@
 require_once __DIR__ . '/init_session.php';
 require_once 'db.php'; 
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/validation.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: home.php');
     exit;
 }
 
-$first = trim($_POST['first_name'] ?? '');
-$last = trim($_POST['last_name'] ?? '');
-$email = trim($_POST['email'] ?? '');
-$username = trim($_POST['username'] ?? '');
+$errors = [];
+
+// Verify CSRF token
+$token = $_POST['csrf_token'] ?? '';
+if (!verify_csrf_token($token)) {
+    $errors[] = 'Invalid security token. Please try again.';
+}
+
+// Sanitize and validate inputs
+$first = sanitize_string($_POST['first_name'] ?? '');
+$last = sanitize_string($_POST['last_name'] ?? '');
+$email = validate_email($_POST['email'] ?? '');
+$username = sanitize_string($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
 
-$errors = [];
-if ($first === '') $errors[] = 'First name is required.';
-if ($last === '') $errors[] = 'Last name is required.';
-if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'A valid email address is required.';
-if ($username === '') $errors[] = 'Username is required.';
-if (strlen($password) < 8) $errors[] = 'Password must be at least 8 characters.';
+// Validation
+if ($first === '') {
+    $errors[] = 'First name is required.';
+} elseif (strlen($first) < 2) {
+    $errors[] = 'First name must be at least 2 characters.';
+}
+
+if ($last === '') {
+    $errors[] = 'Last name is required.';
+} elseif (strlen($last) < 2) {
+    $errors[] = 'Last name must be at least 2 characters.';
+}
+
+if ($email === false) {
+    $errors[] = 'A valid email address is required.';
+}
+
+if ($username === '') {
+    $errors[] = 'Username is required.';
+} elseif (strlen($username) < 3) {
+    $errors[] = 'Username must be at least 3 characters.';
+} elseif (strlen($username) > 50) {
+    $errors[] = 'Username must be less than 50 characters.';
+} elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+    $errors[] = 'Username can only contain letters, numbers, and underscores.';
+}
+
+if (strlen($password) < 8) {
+    $errors[] = 'Password must be at least 8 characters.';
+} elseif (strlen($password) > 255) {
+    $errors[] = 'Password is too long.';
+}
 
 if (empty($errors)) {
   try {

@@ -53,7 +53,17 @@ $cart_sql = "SELECT ci.cart_item_id AS item_id, ci.cart_id, ci.product_id, ci.qu
 
 $stmt = $pdo->prepare($cart_sql);
 $stmt->execute([':uid' => $user_id]);
-$cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$all_cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Filter to only selected items if selectedItems is provided
+$cart_items = $all_cart_items;
+$selected_item_ids = [];
+if (isset($_POST['selectedItems']) && !empty($_POST['selectedItems'])) {
+    $selected_item_ids = array_map('intval', (array)$_POST['selectedItems']);
+    $cart_items = array_filter($all_cart_items, function($item) use ($selected_item_ids) {
+        return in_array((int)$item['item_id'], $selected_item_ids);
+    });
+}
 
 // Calculate totals
 $subtotal = 0;
@@ -93,6 +103,7 @@ $total = $subtotal + $shipping;
                     </div>
                     <div class="card-body">
                         <form id="checkoutForm" method="POST" action="process_checkout.php" onsubmit="return false;">
+                            <?php echo csrf_field(); ?>
                             <input type="hidden" name="checkout_form" value="1">
                             <input type="hidden" id="addressId" name="addressId" value="<?php echo $default_address ? $default_address['address_id'] : ''; ?>">
                             
@@ -188,7 +199,7 @@ $total = $subtotal + $shipping;
                     <div class="card-body">
                         <?php if (count($cart_items) > 0): ?>
                             <?php foreach ($cart_items as $item): ?>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3" data-item-id="<?php echo $item['item_id']; ?>">
                                     <div class="d-flex align-items-center">
                                         <img src="<?php echo $item['product_image']; ?>" alt="<?php echo $item['product_name']; ?>" 
                                              class="me-3" style="width: 50px; height: 50px; object-fit: cover;">
@@ -197,7 +208,7 @@ $total = $subtotal + $shipping;
                                             <small class="text-muted">Qty: <?php echo $item['quantity']; ?></small>
                                         </div>
                                     </div>
-                                    <span>₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
+                                    <span class="item-price">₱<?php echo number_format($item['price'] * $item['quantity'], 2); ?></span>
                                 </div>
                             <?php endforeach; ?>
                             
@@ -205,11 +216,11 @@ $total = $subtotal + $shipping;
                             
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Subtotal:</span>
-                                <span>₱<?php echo number_format($subtotal, 2); ?></span>
+                                <span id="orderSubtotal">₱<?php echo number_format($subtotal, 2); ?></span>
                             </div>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Shipping:</span>
-                                <span>₱<?php echo number_format($shipping, 2); ?></span>
+                                <span id="orderShipping">₱<?php echo number_format($shipping, 2); ?></span>
                             </div>
                             <div class="d-flex justify-content-between mb-3">
                                 <span>Tax:</span>
@@ -217,7 +228,7 @@ $total = $subtotal + $shipping;
                             </div>
                             <div class="d-flex justify-content-between fw-bold">
                                 <span>Total:</span>
-                                <span>₱<?php echo number_format($total, 2); ?></span>
+                                <span id="orderTotal">₱<?php echo number_format($total, 2); ?></span>
                             </div>
                             
                             <button type="submit" form="checkoutForm" class="btn btn-primary w-100 mt-3">
@@ -245,6 +256,73 @@ $total = $subtotal + $shipping;
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Filter items based on selected items from cart
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectedItemsJson = sessionStorage.getItem('selectedCartItems');
+            console.log('Selected Items JSON:', selectedItemsJson);
+            
+            if (selectedItemsJson) {
+                try {
+                    const selectedItems = JSON.parse(selectedItemsJson);
+                    console.log('Selected Items Array:', selectedItems);
+                    
+                    const itemElements = document.querySelectorAll('[data-item-id]');
+                    console.log('Found item elements:', itemElements.length);
+                    
+                    let selectedSubtotal = 0;
+                    let visibleItemsCount = 0;
+
+                    itemElements.forEach(element => {
+                        const itemId = parseInt(element.getAttribute('data-item-id'));
+                        console.log('Checking item ID:', itemId, 'Is selected:', selectedItems.includes(itemId));
+                        
+                        if (selectedItems.includes(itemId)) {
+                            // Show item
+                            element.style.display = 'block';
+                            element.style.visibility = 'visible';
+                            
+                            // Get the price from the item-price span
+                            const priceElement = element.querySelector('.item-price');
+                            if (priceElement) {
+                                const priceText = priceElement.textContent.trim();
+                                const price = parseFloat(priceText.replace('₱', '').replace(/,/g, ''));
+                                console.log('Item price:', price);
+                                selectedSubtotal += price;
+                            }
+                            visibleItemsCount++;
+                        } else {
+                            // Hide item completely
+                            element.style.display = 'none';
+                            element.style.visibility = 'hidden';
+                        }
+                    });
+
+                    console.log('Selected subtotal:', selectedSubtotal);
+                    console.log('Visible items:', visibleItemsCount);
+
+                    // Update totals
+                    const shipping = selectedSubtotal > 0 ? 150 : 0;
+                    const total = selectedSubtotal + shipping;
+                    
+                    const subtotalEl = document.getElementById('orderSubtotal');
+                    const shippingEl = document.getElementById('orderShipping');
+                    const totalEl = document.getElementById('orderTotal');
+                    const gcashAmountEl = document.getElementById('gcashAmount');
+                    
+                    if (subtotalEl) subtotalEl.textContent = '₱' + selectedSubtotal.toFixed(2);
+                    if (shippingEl) shippingEl.textContent = '₱' + shipping.toFixed(2);
+                    if (totalEl) totalEl.textContent = '₱' + total.toFixed(2);
+                    if (gcashAmountEl) gcashAmountEl.textContent = '₱' + total.toFixed(2);
+                    
+                    console.log('Totals updated');
+                } catch (error) {
+                    console.error('Error parsing selected items:', error);
+                }
+            } else {
+                console.log('No selected items in sessionStorage');
+            }
+        });
+
         // Handle payment method changes
         document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
             radio.addEventListener('change', function() {
@@ -287,6 +365,13 @@ $total = $subtotal + $shipping;
             
             // Add payment method to form data
             formData.append('paymentMethod', paymentMethod);
+            
+            // Get selected items from sessionStorage
+            const selectedItems = sessionStorage.getItem('selectedCartItems');
+            if (selectedItems) {
+                formData.append('selectedItems', selectedItems);
+                sessionStorage.removeItem('selectedCartItems'); // Clear after using
+            }
             
             // Show loading state
             const submitBtn = this.querySelector('button[type="submit"]');

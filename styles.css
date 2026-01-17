@@ -2118,7 +2118,7 @@ p {
 }
 
 .invalid-feedback {
-    display: block;
+    display: none;
     color: #dc3545;
     font-size: 0.8125rem;
     margin-top: 0.25rem;
@@ -2198,7 +2198,7 @@ p {
 }
 
 #loginForm .invalid-feedback {
-    display: block;
+    display: none;
     color: #dc3545;
     font-size: 0.8125rem;
     margin-top: 0.25rem;

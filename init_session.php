@@ -67,6 +67,3 @@ function require_login_json()
     }
     return (int) $_SESSION['user_id'];
 }
-
-?>
-

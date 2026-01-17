@@ -16,8 +16,6 @@ init_session();
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <!-- Validation Script -->
-  <script src="js/validation.js"></script>
   <!-- Custom CSS -->
   <link href="styles.css" rel="stylesheet">
 </head>

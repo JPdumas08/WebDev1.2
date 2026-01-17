@@ -1,11 +1,9 @@
 <?php
+header('Content-Type: application/json');
 require_once __DIR__ . '/init_session.php';
 require_once 'db.php'; 
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/validation.php';
-
-// Handle JSON responses for AJAX requests
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(400);
@@ -36,14 +34,14 @@ $agree_terms = isset($_POST['agree_terms']) ? (bool)$_POST['agree_terms'] : fals
 // Validate First Name
 if ($first === '') {
     $errors[] = 'First name is required.';
-} elseif (!preg_match("/^[A-Za-z]{2,50}([\s'-][A-Za-z]{1,})*$/", $first)) {
+} elseif (!preg_match("/^[A-Za-z\s'-]{2,50}$/", $first)) {
     $errors[] = 'First name must be 2-50 characters (letters, spaces, or hyphens only).';
 }
 
 // Validate Last Name
 if ($last === '') {
     $errors[] = 'Last name is required.';
-} elseif (!preg_match("/^[A-Za-z]{2,50}([\s'-][A-Za-z]{1,})*$/", $last)) {
+} elseif (!preg_match("/^[A-Za-z\s'-]{2,50}$/", $last)) {
     $errors[] = 'Last name must be 2-50 characters (letters, spaces, or hyphens only).';
 }
 
@@ -73,8 +71,8 @@ if ($username === '') {
 } elseif (!preg_match('/^[A-Za-z0-9_]{4,20}$/', $username)) {
     $errors[] = 'Username must be 4-20 characters (letters, numbers, underscores only).';
 } else {
-    // Check if username exists
-    $usernameCheck = $pdo->prepare("SELECT user_id FROM users WHERE LOWER(username) = LOWER(?)");
+    // Check if username exists in user_name column
+    $usernameCheck = $pdo->prepare("SELECT user_id FROM users WHERE LOWER(user_name) = LOWER(?)");
     try {
         $usernameCheck->execute([$username]);
         if ($usernameCheck->rowCount() > 0) {
@@ -118,14 +116,14 @@ if (empty($errors)) {
     $hash = password_hash($password, PASSWORD_BCRYPT);
     
     // Insert user into database
-    $sql = "INSERT INTO users (first_name, last_name, email_address, username, password, created_at) 
-            VALUES (:first, :last, :email, :username, :password, NOW())";
+    $sql = "INSERT INTO users (first_name, last_name, email_address, user_name, password) 
+            VALUES (:first, :last, :email, :user_name, :password)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
       ':first' => $first,
       ':last' => $last,
       ':email' => $email,
-      ':username' => $username,
+      ':user_name' => $username,
       ':password' => $hash
     ]);
     

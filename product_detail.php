@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return val;
   }
 
-  async function addToCart(quantity, redirectAfter) {
+  async function addToCart(quantity, redirectAfter, productIdForBuyNow = null) {
     addBtn.disabled = true;
     buyBtn.disabled = true;
     const payload = new URLSearchParams({ product_id: '<?php echo (int) $productId; ?>', quantity: quantity });
@@ -292,6 +292,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
       updateCartBadge();
 
+      // Only mark buy-now after a successful add
+      if (redirectAfter && productIdForBuyNow) {
+        sessionStorage.setItem('buyNowProductId', productIdForBuyNow);
+      } else {
+        sessionStorage.removeItem('buyNowProductId');
+      }
+
       if (redirectAfter) {
         window.location.href = 'checkout.php';
       } else {
@@ -308,18 +315,17 @@ document.addEventListener('DOMContentLoaded', function() {
   addBtn.addEventListener('click', function(e) {
     e.preventDefault();
     const qty = sanitizeQty();
-    addToCart(qty, false);
+    // Regular add: clear any previous buy-now flag
+    sessionStorage.removeItem('buyNowProductId');
+    addToCart(qty, false, null);
   });
 
   buyBtn.addEventListener('click', function(e) {
     e.preventDefault();
     const qty = sanitizeQty();
     const productId = '<?php echo (int) $productId; ?>';
-    
-    // Set sessionStorage to show ONLY this product in checkout
-1    sessionStorage.setItem('buyNowProductId', productId);
-    
-    addToCart(qty, true);
+    // Buy Now: set flag only after add succeeds
+    addToCart(qty, true, productId);
   });
 
   document.querySelectorAll('.product-suggestion').forEach(function(card) {

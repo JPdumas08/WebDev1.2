@@ -1,9 +1,9 @@
 <?php
+header('Content-Type: application/json');
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/validation.php';
 require_once __DIR__ . '/db.php';
 
-header('Content-Type: application/json');
 init_session();
 
 // ===== RATE LIMITING FOR BRUTE FORCE PROTECTION =====
@@ -115,13 +115,16 @@ if (!checkRateLimit($emailOrUser)) {
 }
 
 try {
-    // Find user by email or username
-    $sql = "SELECT user_id, first_name, last_name, email_address, username, password 
+    // Find user by email OR username (user_name field in database)
+        $sql = "SELECT user_id, first_name, last_name, email_address, password 
             FROM users 
-            WHERE email_address = :id OR username = :id 
+            WHERE email_address = :emailOrUserEmail OR user_name = :emailOrUserName 
             LIMIT 1";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([':id' => $emailOrUser]);
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+        ':emailOrUserEmail' => $emailOrUser,
+        ':emailOrUserName' => $emailOrUser,
+        ]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Generic error message (don't reveal if email/username or password is wrong)
@@ -140,7 +143,6 @@ try {
     
     $_SESSION['user'] = [
         'id' => $user['user_id'],
-        'username' => $user['username'],
         'email' => $user['email_address'],
         'first_name' => $user['first_name'],
         'last_name' => $user['last_name']

@@ -88,6 +88,10 @@ $pageTitle = $pageTitle ?? 'Jeweluxe';
               </div>
             </div>
             
+            <div class="alert alert-danger py-2 px-3 d-none" role="alert" id="loginError" aria-live="polite">
+              Incorrect username or password.
+            </div>
+
             <div class="d-grid gap-2 mb-3">
               <button type="submit" class="btn btn-primary" id="loginSubmitBtn">
                 <i class="fas fa-sign-in-alt me-2"></i>Sign In
@@ -149,14 +153,14 @@ $pageTitle = $pageTitle ?? 'Jeweluxe';
             <small class="invalid-feedback">Please enter a valid, unique email address</small>
             <small class="form-text validation-hint">Will be used to verify your account</small>
           </div>
-          
+
           <div class="mb-3 form-group">
-            <label for="username" class="form-label">
+            <label for="registerUsername" class="form-label">
               <i class="fas fa-at me-1 text-muted"></i>Username
             </label>
-            <input type="text" class="form-control" id="username" name="username" placeholder="Choose a unique username" required data-validate="username">
-            <small class="invalid-feedback">Username required (4-20 characters: letters, numbers, underscores only)</small>
-            <small class="form-text validation-hint">4-20 characters (letters, numbers, underscores only)</small>
+            <input type="text" class="form-control" id="registerUsername" name="username" placeholder="Choose a username (4-20 characters)" required data-validate="username">
+            <small class="invalid-feedback">Username must be 4-20 characters (letters, numbers, underscores only)</small>
+            <small class="form-text validation-hint">Used to log in to your account</small>
           </div>
           
           <div class="row g-2">
@@ -269,7 +273,7 @@ function togglePassword(fieldId) {
 // Validation patterns and rules
 const ValidationRules = {
   name: {
-    pattern: /^[A-Za-z]{2,50}([\s'-][A-Za-z]{1,})*$/,
+    pattern: /^[A-Za-z\s'-]{2,50}$/,
     message: 'Must be 2-50 characters (letters, spaces, or hyphens only)'
   },
   email: {
@@ -290,10 +294,67 @@ const ValidationRules = {
     }
   },
   loginEmail: {
-    pattern: /^[^\s]+@[^\s]+\.[^\s]+$|^[A-Za-z0-9_]{4,20}$/,
-    message: 'Invalid email or username'
+    pattern: /^[^\s@].+@[^\s]+\.[^\s]+$|^[^\s]+$/, // Email OR any non-empty/non-space string
+    message: 'Email or username is required'
   }
 };
+
+// Availability checking state helpers
+function setAvailability(field, status, message = '') {
+  if (!field) return;
+  field.dataset.availability = status; // 'available', 'taken', 'checking', ''
+  if (message) {
+    field.dataset.availMessage = message;
+  } else {
+    delete field.dataset.availMessage;
+  }
+}
+
+function scheduleAvailabilityCheck(field, type, timerRef) {
+  if (!field) return timerRef;
+  clearTimeout(timerRef);
+  return setTimeout(() => runAvailabilityCheck(field, type), 450);
+}
+
+function runAvailabilityCheck(field, type) {
+  const value = field.value.trim();
+  if (!value) {
+    setAvailability(field, '');
+    validateField(field);
+    return;
+  }
+
+  // Only check if format is valid
+  if (type === 'email' && !ValidationRules.email.pattern.test(value)) {
+    setAvailability(field, '');
+    return;
+  }
+  if (type === 'username' && !ValidationRules.username.pattern.test(value)) {
+    setAvailability(field, '');
+    return;
+  }
+
+  setAvailability(field, 'checking');
+  fetch(`check_account.php?${type}=` + encodeURIComponent(value), {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' }
+  })
+    .then(res => res.ok ? res.json() : Promise.reject())
+    .then(data => {
+      if (!data || data.success === false) return;
+      if (type === 'email' && data.emailExists) {
+        setAvailability(field, 'taken', 'Email address is already in use.');
+      } else if (type === 'username' && data.usernameExists) {
+        setAvailability(field, 'taken', 'Username is already taken.');
+      } else {
+        setAvailability(field, 'available');
+      }
+      validateField(field);
+    })
+    .catch(() => {
+      setAvailability(field, '');
+    });
+}
 
 // Real-time password strength indicator
 function updatePasswordStrength() {
@@ -342,7 +403,7 @@ function updatePasswordRequirements() {
   updateReq('req-special', rules.special.test(password));
 }
 
-// Validate individual field
+// Validate individual field and update error messages
 function validateField(field) {
   const validation = field.dataset.validate;
   const value = field.value.trim();
@@ -350,16 +411,33 @@ function validateField(field) {
   if (!validation) return true;
   
   let isValid = true;
+  let errorMessage = '';
   
+  // Determine validity and error message
   switch(validation) {
     case 'name':
       isValid = ValidationRules.name.pattern.test(value) && value.length >= 2 && value.length <= 50;
+      if (!isValid && value.length > 0) {
+        errorMessage = 'Must be 2-50 characters (letters, spaces, hyphens, or apostrophes only)';
+      }
       break;
     case 'email':
       isValid = ValidationRules.email.pattern.test(value);
+      if (!isValid && value.length > 0) {
+        errorMessage = 'Please enter a valid email address';
+      } else if (field.dataset.availability === 'taken') {
+        isValid = false;
+        errorMessage = field.dataset.availMessage || 'Email address is already in use.';
+      }
       break;
     case 'username':
       isValid = ValidationRules.username.pattern.test(value);
+      if (!isValid && value.length > 0) {
+        errorMessage = 'Must be 4-20 characters (letters, numbers, underscores only)';
+      } else if (field.dataset.availability === 'taken') {
+        isValid = false;
+        errorMessage = field.dataset.availMessage || 'Username is already taken.';
+      }
       break;
     case 'password':
       const rules = ValidationRules.password.requirements;
@@ -368,25 +446,58 @@ function validateField(field) {
                 rules.lowercase.test(value) &&
                 rules.number.test(value) &&
                 rules.special.test(value);
+      if (!isValid && value.length > 0) {
+        errorMessage = 'Password does not meet all requirements';
+      }
       break;
     case 'confirm-password':
-      isValid = value === document.getElementById('registerPassword').value;
+      const passwordField = document.getElementById('registerPassword');
+      isValid = value === passwordField.value && passwordField.value.length > 0;
+      if (!isValid && value.length > 0) {
+        errorMessage = 'Passwords do not match';
+      }
       break;
     case 'terms':
       isValid = field.checked;
+      if (!isValid) {
+        errorMessage = 'You must agree to the Terms & Conditions';
+      }
       break;
     case 'login-email':
-      isValid = ValidationRules.loginEmail.pattern.test(value);
+      isValid = value.length > 0 && !/^\s+$/.test(value);
+      if (!isValid && value.length > 0) {
+        errorMessage = 'Please enter a valid email or username';
+      }
       break;
     case 'password-login':
       isValid = value.length > 0 && !/^\s+$/.test(value);
       break;
   }
   
-  // Update field styling
-  if (value.length > 0 || field.classList.contains('was-validated')) {
+  // Update field styling and error message visibility
+  const hasInput = value.length > 0 || (validation === 'terms' && field.checked) || field.classList.contains('was-validated');
+  
+  if (hasInput) {
     field.classList.toggle('is-invalid', !isValid);
     field.classList.toggle('is-valid', isValid);
+    
+    // Update error message visibility
+    const feedbackElement = field.parentElement.querySelector('.invalid-feedback');
+    if (feedbackElement) {
+      if (isValid) {
+        feedbackElement.style.display = 'none';
+      } else {
+        feedbackElement.textContent = errorMessage || 'Invalid input';
+        feedbackElement.style.display = 'block';
+      }
+    }
+  } else {
+    // Clear styling if empty
+    field.classList.remove('is-invalid', 'is-valid');
+    const feedbackElement = field.parentElement.querySelector('.invalid-feedback');
+    if (feedbackElement) {
+      feedbackElement.style.display = 'none';
+    }
   }
   
   return isValid;
@@ -395,35 +506,78 @@ function validateField(field) {
 // Handle sign-up form submission
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
-  // Real-time validation
-  const passwordField = document.getElementById('registerPassword');
-  if (passwordField) {
-    passwordField.addEventListener('input', function() {
-      updatePasswordStrength();
-      updatePasswordRequirements();
-      validateField(this);
-    });
-  }
-  
-  const confirmPasswordField = document.getElementById('confirmPassword');
-  if (confirmPasswordField) {
-    confirmPasswordField.addEventListener('input', function() {
-      validateField(this);
-    });
-  }
-  
-  // Validate all fields on blur
-  registerForm.querySelectorAll('[data-validate]').forEach(field => {
-    field.addEventListener('blur', function() {
-      validateField(this);
-    });
-    
-    field.addEventListener('input', function() {
-      if (this.classList.contains('was-validated')) {
+    // Real-time validation for password field
+    const passwordField = document.getElementById('registerPassword');
+    if (passwordField) {
+      passwordField.addEventListener('input', function() {
+        updatePasswordStrength();
+        updatePasswordRequirements();
         validateField(this);
-      }
+        
+        // Also validate confirm password if it has input
+        const confirmPasswordField = document.getElementById('confirmPassword');
+        if (confirmPasswordField && confirmPasswordField.value.length > 0) {
+          validateField(confirmPasswordField);
+        }
+      });
+    }
+    
+    // Real-time validation for confirm password field
+    const confirmPasswordField = document.getElementById('confirmPassword');
+    if (confirmPasswordField) {
+      confirmPasswordField.addEventListener('input', function() {
+        validateField(this);
+      });
+    }
+
+    // Availability checks for email and username
+    const registerEmailField = document.getElementById('registerEmail');
+    const registerUsernameField = document.getElementById('registerUsername');
+    let emailCheckTimer = null;
+    let usernameCheckTimer = null;
+
+    if (registerEmailField) {
+      registerEmailField.addEventListener('input', function() {
+        setAvailability(this, '');
+        validateField(this);
+        emailCheckTimer = scheduleAvailabilityCheck(this, 'email', emailCheckTimer);
+      });
+      registerEmailField.addEventListener('blur', function() {
+        emailCheckTimer = scheduleAvailabilityCheck(this, 'email', emailCheckTimer);
+      });
+    }
+
+    if (registerUsernameField) {
+      registerUsernameField.addEventListener('input', function() {
+        setAvailability(this, '');
+        validateField(this);
+        usernameCheckTimer = scheduleAvailabilityCheck(this, 'username', usernameCheckTimer);
+      });
+      registerUsernameField.addEventListener('blur', function() {
+        usernameCheckTimer = scheduleAvailabilityCheck(this, 'username', usernameCheckTimer);
+      });
+    }
+    
+    // Real-time validation for all fields
+    registerForm.querySelectorAll('[data-validate]').forEach(field => {
+      // Validate on input (as user types)
+      field.addEventListener('input', function() {
+        // Don't validate on every keystroke if field hasn't been touched yet
+        if (this.classList.contains('was-validated') || this.value.trim().length > 0) {
+          validateField(this);
+        }
+      });
+      
+      // Validate on blur (when field loses focus)
+      field.addEventListener('blur', function() {
+        validateField(this);
+      });
+      
+      // Validate on change (for checkboxes)
+      field.addEventListener('change', function() {
+        validateField(this);
+      });
     });
-  });
   
   // Form submission
   registerForm.addEventListener('submit', function(e) {
@@ -440,9 +594,6 @@ if (registerForm) {
     });
     
     if (!allValid) {
-      if (window.ToastNotification) {
-        ToastNotification.error('Please fix the validation errors before submitting.');
-      }
       return false;
     }
     
@@ -457,23 +608,38 @@ if (registerForm) {
       method: 'POST',
       body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        if (window.ToastNotification) {
-          ToastNotification.success('Account created! Redirecting to sign in...');
+    .then(response => {
+      if (!response.ok) {
+        console.error('HTTP Error:', response.status, response.statusText);
+      }
+      return response.text();
+    })
+    .then(text => {
+      try {
+        const data = JSON.parse(text);
+        if (data.success) {
+          if (window.ToastNotification) {
+            ToastNotification.success('Account created! Redirecting to sign in...');
+          }
+          setTimeout(() => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+            if (modal) modal.hide();
+            const loginModal = new bootstrap.Modal(document.getElementById('accountModal'));
+            loginModal.show();
+            registerForm.reset();
+            registerForm.classList.remove('was-validated');
+          }, 1500);
+        } else {
+          if (window.ToastNotification) {
+            ToastNotification.error(data.message || 'Registration failed. Please try again.');
+          }
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
         }
-        setTimeout(() => {
-          const modal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
-          if (modal) modal.hide();
-          const loginModal = new bootstrap.Modal(document.getElementById('accountModal'));
-          loginModal.show();
-          registerForm.reset();
-          registerForm.classList.remove('was-validated');
-        }, 1500);
-      } else {
+      } catch (e) {
+        console.error('JSON Parse Error:', e, 'Response:', text);
         if (window.ToastNotification) {
-          ToastNotification.error(data.message || 'Registration failed. Please try again.');
+          ToastNotification.error('Server error. Please try again.');
         }
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Create Account';
@@ -495,20 +661,33 @@ if (registerForm) {
 // Handle sign-in form validation
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
-  loginForm.querySelectorAll('[data-validate]').forEach(field => {
-    field.addEventListener('blur', function() {
-      validateField(this);
-    });
-    
-    field.addEventListener('input', function() {
-      if (this.classList.contains('was-validated')) {
-        validateField(this);
+    const loginError = document.getElementById('loginError');
+    const hideLoginError = () => {
+      if (loginError) {
+        loginError.classList.add('d-none');
       }
+    };
+
+    // Real-time validation for all fields
+    loginForm.querySelectorAll('[data-validate]').forEach(field => {
+      // Validate on input (as user types)
+      field.addEventListener('input', function() {
+        hideLoginError();
+        // Don't validate on every keystroke if field hasn't been touched yet
+        if (this.classList.contains('was-validated') || this.value.trim().length > 0) {
+          validateField(this);
+        }
+      });
+      
+      // Validate on blur (when field loses focus)
+      field.addEventListener('blur', function() {
+        validateField(this);
+      });
     });
-  });
   
   loginForm.addEventListener('submit', function(e) {
     e.preventDefault();
+    hideLoginError();
     
     this.classList.add('was-validated');
     
@@ -535,31 +714,37 @@ if (loginForm) {
       method: 'POST',
       body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        if (window.ToastNotification) {
-          ToastNotification.success(data.message || 'Login successful!');
+    .then(response => {
+      if (!response.ok) {
+        console.error('HTTP Error:', response.status, response.statusText);
+      }
+      return response.text();
+    })
+    .then(text => {
+      try {
+        const data = JSON.parse(text);
+        if (data.success) {
+          setTimeout(() => {
+            window.location.href = data.redirect_url || 'home.php';
+          }, 1000);
+        } else {
+          if (loginError) {
+            loginError.textContent = 'Incorrect username or password.';
+            loginError.classList.remove('d-none');
+          }
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
         }
-        setTimeout(() => {
-          window.location.href = data.redirect_url || 'home.php';
-        }, 1000);
-      } else {
-        if (window.ToastNotification) {
-          ToastNotification.error(data.message || 'Login failed. Please try again.');
+      } catch (e) {
+        console.error('JSON Parse Error:', e, 'Response:', text);
+        if (loginError) {
+          loginError.textContent = 'Incorrect username or password.';
+          loginError.classList.remove('d-none');
         }
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
       }
     })
-    .catch(error => {
-      console.error('Error:', error);
-      if (window.ToastNotification) {
-        ToastNotification.error('An error occurred. Please try again.');
-      }
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Sign In';
-    });
     
     return false;
   });

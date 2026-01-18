@@ -44,21 +44,61 @@ if (!$default_address && !empty($addresses)) {
 }
 
 // Get cart items (PDO)
-$cart_sql = "SELECT ci.cart_item_id AS item_id, ci.cart_id, ci.product_id, ci.quantity, ci.price,
+$cart_sql = "SELECT ci.cart_item_id AS item_id, ci.product_id, ci.quantity, ci.price,
                     p.product_name, p.product_image
              FROM cart_items ci
-             JOIN cart c ON ci.cart_id = c.cart_id
              JOIN products p ON ci.product_id = p.product_id
+             JOIN cart c ON ci.cart_id = c.cart_id
              WHERE c.user_id = :uid";
 
 $stmt = $pdo->prepare($cart_sql);
 $stmt->execute([':uid' => $user_id]);
 $all_cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Filter to only selected items if selectedItems is provided
+// Check if this is a Buy Now checkout (from product detail via URL params)
+$buy_now_product_id = null;
+$buy_now_quantity = 1;
+$is_buy_now_mode = false;
+
+// Debug: log what we receive
+error_log('GET params: ' . json_encode($_GET));
+
+if (isset($_GET['buyNow']) && $_GET['buyNow'] == 1 && isset($_GET['productId'])) {
+    $is_buy_now_mode = true;
+    $buy_now_product_id = (int)$_GET['productId'];
+    $buy_now_quantity = isset($_GET['qty']) ? max(1, min(99, (int)$_GET['qty'])) : 1;
+    
+    error_log('Buy Now Mode Activated - Product ID: ' . $buy_now_product_id . ', Qty: ' . $buy_now_quantity);
+    
+    // Fetch the product details for Buy Now
+    $prod_sql = "SELECT product_id, product_name, product_image, product_price FROM products WHERE product_id = :pid";
+    $prod_stmt = $pdo->prepare($prod_sql);
+    $prod_stmt->execute([':pid' => $buy_now_product_id]);
+    $buy_now_product = $prod_stmt->fetch(PDO::FETCH_ASSOC);
+    
+    error_log('Product Fetched: ' . json_encode($buy_now_product));
+    
+    if ($buy_now_product) {
+        // Create a temporary cart item for Buy Now (not added to database)
+        $buy_now_item = [
+            'item_id' => 'buy_now_' . $buy_now_product_id,
+            'product_id' => $buy_now_product['product_id'],
+            'product_name' => $buy_now_product['product_name'],
+            'product_image' => $buy_now_product['product_image'],
+            'quantity' => $buy_now_quantity,
+            'price' => $buy_now_product['product_price']
+        ];
+        // Use only the Buy Now item, not the regular cart
+        $all_cart_items = [$buy_now_item];
+        error_log('Buy Now Item Created: ' . json_encode($buy_now_item));
+    }
+}
+
+
+// Filter to only selected items if selectedItems is provided (only in regular cart mode)
 $cart_items = $all_cart_items;
 $selected_item_ids = [];
-if (isset($_POST['selectedItems']) && !empty($_POST['selectedItems'])) {
+if (!$is_buy_now_mode && isset($_POST['selectedItems']) && !empty($_POST['selectedItems'])) {
     $selected_item_ids = array_map('intval', (array)$_POST['selectedItems']);
     $cart_items = array_filter($all_cart_items, function($item) use ($selected_item_ids) {
         return in_array((int)$item['item_id'], $selected_item_ids);
@@ -279,11 +319,25 @@ $total = $subtotal + $shipping;
                                 <div class="small text-muted">Pay when you receive your order</div>
                             </label>
                         </div>
-                        <div class="form-check">
+                        <div class="form-check mb-3">
                             <input class="form-check-input" type="radio" name="paymentMethod" id="gcash" value="gcash">
                             <label class="form-check-label" for="gcash">
                                 <strong>GCash</strong>
                                 <div class="small text-muted">Fast and secure mobile payment</div>
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="paypal" value="paypal">
+                            <label class="form-check-label" for="paypal">
+                                <strong>PayPal</strong>
+                                <div class="small text-muted">Pay securely with your PayPal account</div>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="bank_transfer" value="bank_transfer">
+                            <label class="form-check-label" for="bank_transfer">
+                                <strong>Bank Transfer</strong>
+                                <div class="small text-muted">Direct bank deposit or online transfer</div>
                             </label>
                         </div>
 
@@ -302,6 +356,40 @@ $total = $subtotal + $shipping;
                                 <li>Complete the transaction</li>
                             </ol>
                         </div>
+
+                        <!-- PayPal Payment Details (hidden by default) -->
+                        <div id="paypalDetails" class="mt-3 p-3 bg-light rounded" style="display: none;">
+                            <h6 class="mb-3">PayPal Payment Instructions</h6>
+                            <div class="alert alert-info mb-3">
+                                <strong>PayPal Email:</strong> payments@jeweluxe.com
+                            </div>
+                            <ol class="small mb-0">
+                                <li>Log in to your PayPal account</li>
+                                <li>Go to Send & Request</li>
+                                <li>Enter the PayPal email above</li>
+                                <li>Enter the amount: <strong id="paypalAmount">₱0.00</strong></li>
+                                <li>Add reference: Your Order ID (provided after checkout)</li>
+                                <li>Complete the transaction</li>
+                            </ol>
+                        </div>
+
+                        <!-- Bank Transfer Payment Details (hidden by default) -->
+                        <div id="bankTransferDetails" class="mt-3 p-3 bg-light rounded" style="display: none;">
+                            <h6 class="mb-3">Bank Transfer Instructions</h6>
+                            <div class="alert alert-info mb-3">
+                                <div class="mb-2"><strong>Bank Name:</strong> BDO Unibank</div>
+                                <div class="mb-2"><strong>Account Name:</strong> Jeweluxe Store</div>
+                                <div><strong>Account Number:</strong> 1234-5678-9012</div>
+                            </div>
+                            <ol class="small mb-0">
+                                <li>Visit your bank branch or use online banking</li>
+                                <li>Transfer to the account above</li>
+                                <li>Enter the amount: <strong id="bankTransferAmount">₱0.00</strong></li>
+                                <li>Use your Order ID as reference (provided after checkout)</li>
+                                <li>Keep your transaction receipt</li>
+                                <li>Confirm your payment on the payment page</li>
+                            </ol>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -316,7 +404,15 @@ $total = $subtotal + $shipping;
                         <?php if (count($cart_items) > 0): ?>
                             <div class="order-items-container">
                                 <?php foreach ($cart_items as $item): ?>
-                                    <div data-item-id="<?php echo $item['item_id']; ?>" data-product-id="<?php echo $item['product_id']; ?>">
+                                    <div data-item-id="<?php echo $item['item_id']; ?>" data-product-id="<?php echo $item['product_id']; ?>"
+                                         <?php if ($is_buy_now_mode): ?>
+                                         data-buy-now-product-id="<?php echo $item['product_id']; ?>"
+                                         data-buy-now-product-name="<?php echo htmlspecialchars($item['product_name']); ?>"
+                                         data-buy-now-product-image="<?php echo htmlspecialchars($item['product_image']); ?>"
+                                         data-buy-now-product-price="<?php echo $item['price']; ?>"
+                                         data-buy-now-quantity="<?php echo $item['quantity']; ?>"
+                                         <?php endif; ?>
+                                    >
                                         <div class="order-item-left">
                                             <img src="<?php echo $item['product_image']; ?>" alt="<?php echo $item['product_name']; ?>">
                                             <div class="order-item-info">
@@ -450,6 +546,9 @@ $total = $subtotal + $shipping;
                     if (shippingEl) shippingEl.textContent = '₱' + shipping.toFixed(2);
                     if (totalEl) totalEl.textContent = '₱' + total.toFixed(2);
                     if (gcashAmountEl) gcashAmountEl.textContent = '₱' + total.toFixed(2);
+                    
+                    // Update all payment method amounts
+                    updatePaymentAmounts();
                 })
                 .catch(error => {
                     console.error('Error fetching cart data:', error);
@@ -466,8 +565,20 @@ $total = $subtotal + $shipping;
         document.addEventListener('DOMContentLoaded', function() {
             const selectedItemsJson = sessionStorage.getItem('selectedCartItems');
             const buyNowProductId = sessionStorage.getItem('buyNowProductId');
+            
+            // Check if we're in Buy Now mode via URL (newer implementation)
+            const urlParams = new URLSearchParams(window.location.search);
+            const isBuyNowUrl = urlParams.has('buyNow') && urlParams.get('buyNow') === '1';
+            
             console.log('Selected Items JSON:', selectedItemsJson);
-            console.log('Buy Now Product ID:', buyNowProductId);
+            console.log('Buy Now Product ID (sessionStorage):', buyNowProductId);
+            console.log('Buy Now via URL:', isBuyNowUrl);
+            
+            // Skip filtering if Buy Now is via URL (PHP already handled it)
+            if (isBuyNowUrl) {
+                console.log('Buy Now mode via URL - skipping JS filtering');
+                return;
+            }
             
             if (selectedItemsJson || buyNowProductId) {
                 try {
@@ -571,6 +682,9 @@ $total = $subtotal + $shipping;
                     if (totalEl) totalEl.textContent = '₱' + total.toFixed(2);
                     if (gcashAmountEl) gcashAmountEl.textContent = '₱' + total.toFixed(2);
                     
+                    // Update all payment method amounts
+                    updatePaymentAmounts();
+                    
                     console.log('Totals updated');
                 } catch (error) {
                     console.error('Error parsing selected items:', error);
@@ -584,25 +698,38 @@ $total = $subtotal + $shipping;
         document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 const gcashDetails = document.getElementById('gcashDetails');
+                const paypalDetails = document.getElementById('paypalDetails');
+                const bankTransferDetails = document.getElementById('bankTransferDetails');
+                
+                // Hide all payment details first
+                gcashDetails.style.display = 'none';
+                paypalDetails.style.display = 'none';
+                bankTransferDetails.style.display = 'none';
+                
+                // Show the selected payment method details
                 if (this.value === 'gcash') {
                     gcashDetails.style.display = 'block';
-                } else {
-                    gcashDetails.style.display = 'none';
+                } else if (this.value === 'paypal') {
+                    paypalDetails.style.display = 'block';
+                } else if (this.value === 'bank_transfer') {
+                    bankTransferDetails.style.display = 'block';
                 }
             });
         });
 
-        // Update GCash amount when total changes (if dynamically updated)
-        function updateGCashAmount() {
-            const totalElement = document.querySelector('[id*="Total"]');
+        // Update payment amounts when total changes (if dynamically updated)
+        function updatePaymentAmounts() {
+            const totalElement = document.getElementById('orderTotal');
             if (totalElement) {
-                const totalText = totalElement.textContent.replace('₱', '').trim();
-                document.getElementById('gcashAmount').textContent = '₱' + totalText;
+                const totalText = totalElement.textContent.trim();
+                document.getElementById('gcashAmount').textContent = totalText;
+                document.getElementById('paypalAmount').textContent = totalText;
+                document.getElementById('bankTransferAmount').textContent = totalText;
             }
         }
 
         // Initial update
-        updateGCashAmount();
+        updatePaymentAmounts();
 
         document.getElementById('checkoutForm').addEventListener('submit', function(e) {
             // IMPORTANT: Prevent default form submission immediately
@@ -623,15 +750,38 @@ $total = $subtotal + $shipping;
             // Add payment method to form data
             formData.append('paymentMethod', paymentMethod);
             
-            // Get selected items from sessionStorage
-            const selectedItems = sessionStorage.getItem('selectedCartItems');
-            if (selectedItems) {
-                formData.append('selectedItems', selectedItems);
-                sessionStorage.removeItem('selectedCartItems'); // Clear after using
-            }
+            // Check if this is a Buy Now checkout
+            const urlParams = new URLSearchParams(window.location.search);
+            const isBuyNow = urlParams.has('buyNow') && urlParams.get('buyNow') === '1';
             
-            // Clear Buy Now mode if set
-            sessionStorage.removeItem('buyNowProductId');
+            if (isBuyNow) {
+                // Buy Now mode: pass product details to backend
+                formData.append('isBuyNow', '1');
+                
+                // Get Buy Now product details from DOM
+                const buyNowProduct = document.querySelector('[data-product-id]');
+                if (buyNowProduct) {
+                    const productId = buyNowProduct.getAttribute('data-product-id');
+                    const productData = document.querySelector('[data-buy-now-product-id="' + productId + '"]');
+                    
+                    if (productData) {
+                        formData.append('buyNowProductId', productData.getAttribute('data-buy-now-product-id') || productId);
+                        formData.append('buyNowProductName', productData.getAttribute('data-buy-now-product-name') || '');
+                        formData.append('buyNowProductImage', productData.getAttribute('data-buy-now-product-image') || '');
+                        formData.append('buyNowPrice', productData.getAttribute('data-buy-now-product-price') || '0');
+                        formData.append('buyNowQuantity', productData.getAttribute('data-buy-now-quantity') || '1');
+                    }
+                }
+            } else {
+                // Regular cart mode: get selected items from sessionStorage
+                const selectedItems = sessionStorage.getItem('selectedCartItems');
+                if (selectedItems) {
+                    formData.append('selectedItems', selectedItems);
+                    // DO NOT clear sessionStorage here - only clear after successful server confirmation
+                    // This prevents loss of selection if validation fails and user retries
+                }
+                formData.append('isBuyNow', '0');
+            }
             
             // Show loading state
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -653,6 +803,9 @@ $total = $subtotal + $shipping;
             })
             .then(data => {
                 if (data.success) {
+                    // Clear selectedItems ONLY after successful order creation
+                    sessionStorage.removeItem('selectedCartItems');
+                    
                     // Redirect to appropriate page based on payment method
                     const redirect_url = data.redirect_url || ('order_confirmation.php?order_id=' + data.order_id);
                     ToastNotification.success('Order placed successfully! Redirecting...');
@@ -660,7 +813,8 @@ $total = $subtotal + $shipping;
                         window.location.href = redirect_url;
                     }, 1500);
                 } else {
-                    // Show error message
+                    // Show error message BUT DO NOT clear selectedItems
+                    // User should be able to retry with the same selection
                     ToastNotification.error(data.message || 'An error occurred while processing your order.');
                     // Re-enable button
                     if (submitBtn) {
@@ -671,6 +825,8 @@ $total = $subtotal + $shipping;
             })
             .catch(error => {
                 console.error('Error:', error);
+                // DO NOT clear selectedItems on error
+                // User should be able to retry with the same selection
                 ToastNotification.error('Network error: ' + error.message);
                 // Re-enable button
                 if (submitBtn) {

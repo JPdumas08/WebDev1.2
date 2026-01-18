@@ -47,6 +47,13 @@ if (empty($paymentMethod)) {
     exit();
 }
 
+// Validate payment method is one of the allowed options
+$allowed_payment_methods = ['cod', 'gcash', 'paypal', 'bank_transfer'];
+if (!in_array($paymentMethod, $allowed_payment_methods)) {
+    echo json_encode(['success' => false, 'message' => 'Invalid payment method selected.']);
+    exit();
+}
+
 // Fetch the selected address
 $address_sql = "SELECT * FROM addresses WHERE address_id = :aid AND user_id = :uid";
 $address_stmt = $pdo->prepare($address_sql);
@@ -57,6 +64,9 @@ if (!$address) {
     echo json_encode(['success' => false, 'message' => 'Invalid address selected. Please select a valid shipping address.']);
     exit();
 }
+
+// Check if this is a Buy Now checkout (Buy Now item is passed via POST)
+$is_buy_now_checkout = isset($_POST['isBuyNow']) && $_POST['isBuyNow'] === '1';
 
 // Get cart items (PDO)
 $cart_sql = "SELECT ci.cart_item_id AS item_id, ci.cart_id, ci.product_id, ci.quantity, ci.price,
@@ -70,15 +80,57 @@ $stmt = $pdo->prepare($cart_sql);
 $stmt->execute([':uid' => $user_id]);
 $all_cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Filter to only selected items if selectedItems is provided
-$cart_items = $all_cart_items;
-if (isset($_POST['selectedItems']) && !empty($_POST['selectedItems'])) {
-    $selected_items = json_decode($_POST['selectedItems'], true);
-    if (is_array($selected_items)) {
-        $selected_item_ids = array_map('intval', $selected_items);
-        $cart_items = array_filter($all_cart_items, function($item) use ($selected_item_ids) {
-            return in_array((int)$item['item_id'], $selected_item_ids);
-        });
+// Determine which items to process for checkout
+$cart_items = [];
+
+if ($is_buy_now_checkout) {
+    // Buy Now mode: get the product from POST data
+    if (isset($_POST['buyNowProductId']) && isset($_POST['buyNowQuantity'])) {
+        $buy_product_id = (int)$_POST['buyNowProductId'];
+        $buy_quantity = (int)$_POST['buyNowQuantity'];
+        $buy_price = isset($_POST['buyNowPrice']) ? (float)$_POST['buyNowPrice'] : 0;
+        
+        if ($buy_product_id > 0 && $buy_quantity > 0) {
+            // Create a temporary cart item for Buy Now processing
+            $cart_items = [[
+                'item_id' => 'buy_now_' . $buy_product_id,
+                'cart_id' => null,  // No actual cart_id for Buy Now items
+                'product_id' => $buy_product_id,
+                'quantity' => $buy_quantity,
+                'price' => $buy_price,
+                'product_name' => $_POST['buyNowProductName'] ?? '',
+                'product_image' => $_POST['buyNowProductImage'] ?? ''
+            ]];
+        }
+    }
+} else {
+    // Regular cart checkout: filter to only selected items if selectedItems is provided
+    // First, try to get selectedItems from POST (comes from client sessionStorage)
+    $selected_items_source = 'post';
+    if (isset($_POST['selectedItems']) && !empty($_POST['selectedItems'])) {
+        $selected_items_json = $_POST['selectedItems'];
+        // BACKUP: Also store in SESSION for persistence across retries
+        $_SESSION['checkout_selected_items'] = $selected_items_json;
+    } elseif (isset($_SESSION['checkout_selected_items']) && !empty($_SESSION['checkout_selected_items'])) {
+        // FALLBACK: If POST selectedItems missing, use SESSION backup (client sessionStorage might have been cleared)
+        $selected_items_json = $_SESSION['checkout_selected_items'];
+        $selected_items_source = 'session';
+        error_log('Using SESSION backup for selectedItems (client sessionStorage may have been cleared)');
+    } else {
+        $selected_items_json = null;
+    }
+    
+    // Process selected items
+    $cart_items = $all_cart_items;
+    if ($selected_items_json) {
+        $selected_items = json_decode($selected_items_json, true);
+        if (is_array($selected_items)) {
+            $selected_item_ids = array_map('intval', $selected_items);
+            $cart_items = array_filter($all_cart_items, function($item) use ($selected_item_ids) {
+                return in_array((int)$item['item_id'], $selected_item_ids);
+            });
+            error_log('Cart checkout using ' . $selected_items_source . ': Processing ' . count($selected_item_ids) . ' selected items out of ' . count($all_cart_items) . ' total cart items');
+        }
     }
 }
 
@@ -116,7 +168,8 @@ try {
     $order_number = 'ORD' . date('Ymd') . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
 
     // Set payment status based on payment method
-    // COD: pending, GCash: pending (user needs to send payment)
+    // All payment methods start as 'pending'
+    // Status will be updated to 'paid' after user confirms payment on respective payment pages
     $payment_status = 'pending';
 
     // Insert order (align with schema columns that exist in WEBDEV-MAIN.sql)
@@ -163,29 +216,58 @@ try {
         ':order_id' => $order_id,
         ':payment_method' => $paymentMethod,
         ':amount' => $total,
-        ':status' => 'pending'
+        ':status' => 'pending' // All payments start as pending
     ]);
 
-    // Clear cart items for this user
-    $clear_sql = "DELETE ci FROM cart_items ci
-                  JOIN cart c ON c.cart_id = ci.cart_id
-                  WHERE c.user_id = :uid";
-    $clear_stmt = $pdo->prepare($clear_sql);
-    $clear_stmt->execute([':uid' => $user_id]);
+    // Only clear cart items if this is NOT a Buy Now checkout
+    // For regular cart checkout, only delete the items that were selected for purchase
+    if (!$is_buy_now_checkout && !empty($cart_items)) {
+        // Get the cart IDs from the items being purchased
+        $items_to_delete = array_filter($cart_items, function($item) {
+            return !strpos($item['item_id'], 'buy_now_'); // Only delete actual cart items, not Buy Now items
+        });
+        
+        if (!empty($items_to_delete)) {
+            // Delete only the selected cart items that were included in the purchase
+            $item_ids_to_delete = array_values(array_map(function($item) { return (int)$item['item_id']; }, $items_to_delete));
+            
+            if (!empty($item_ids_to_delete)) {
+                $placeholders = implode(',', array_fill(0, count($item_ids_to_delete), '?'));
+                $delete_sql = "DELETE FROM cart_items WHERE cart_item_id IN (" . $placeholders . ")";
+                $delete_stmt = $pdo->prepare($delete_sql);
+                $delete_stmt->execute($item_ids_to_delete);
+            }
+        }
+    }
+    // Note: Buy Now checkout does NOT delete from cart_items table since it doesn't use the cart database
+    // The order is created from the Buy Now product data passed in POST
 
     $pdo->commit();
 
+    // Clear session backup only after successful order creation
+    unset($_SESSION['checkout_selected_items']);
+
     // Determine redirect based on payment method
+    // Redirect to respective payment instruction/confirmation pages
     $redirect_url = 'order_confirmation.php?order_id=' . $order_id;
+    
     if ($paymentMethod === 'gcash') {
         $redirect_url = 'gcash_payment.php?order_id=' . $order_id;
+    } elseif ($paymentMethod === 'paypal') {
+        $redirect_url = 'paypal_payment.php?order_id=' . $order_id;
+    } elseif ($paymentMethod === 'bank_transfer') {
+        $redirect_url = 'bank_transfer_payment.php?order_id=' . $order_id;
     }
+
+    // Log checkout success for debugging
+    error_log('Order created successfully. Order ID: ' . $order_id . ', Payment Method: ' . $paymentMethod . ', Is Buy Now: ' . ($is_buy_now_checkout ? 'yes' : 'no'));
 
     echo json_encode([
         'success' => true,
         'order_id' => $order_id,
         'order_number' => $order_number,
         'payment_method' => $paymentMethod,
+        'payment_status' => $payment_status,
         'redirect_url' => $redirect_url,
         'message' => 'Order placed successfully!'
     ]);

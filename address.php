@@ -2,6 +2,137 @@
 require_once __DIR__ . '/init_session.php';
 require_once __DIR__ . '/db.php';
 
+// Ensure philippine locations reference table exists and is seeded (lightweight seed)
+$pdo->exec("CREATE TABLE IF NOT EXISTS phil_locations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    province VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    INDEX idx_province (province),
+    INDEX idx_province_city (province, city)
+)");
+
+$seedData = [
+    // NCR
+    ['Metro Manila', 'Manila'],
+    ['Metro Manila', 'Quezon City'],
+    ['Metro Manila', 'Makati'],
+    ['Metro Manila', 'Taguig'],
+    ['Metro Manila', 'Pasig'],
+    ['Metro Manila', 'Pasay'],
+    ['Metro Manila', 'Mandaluyong'],
+    ['Metro Manila', 'Marikina'],
+    ['Metro Manila', 'Caloocan'],
+    ['Metro Manila', 'Parañaque'],
+    ['Metro Manila', 'Las Piñas'],
+    ['Metro Manila', 'Valenzuela'],
+    // Central Luzon
+    ['Bulacan', 'Malolos'],
+    ['Bulacan', 'Meycauayan'],
+    ['Bulacan', 'San Jose del Monte'],
+    ['Bulacan', 'Baliuag'],
+    ['Bulacan', 'Plaridel'],
+    ['Pampanga', 'San Fernando'],
+    ['Pampanga', 'Angeles'],
+    ['Pampanga', 'Mabalacat'],
+    ['Pampanga', 'Apalit'],
+    ['Nueva Ecija', 'Cabanatuan'],
+    ['Nueva Ecija', 'Gapan'],
+    ['Nueva Ecija', 'San Jose'],
+    ['Nueva Ecija', 'Palayan'],
+    ['Tarlac', 'Tarlac City'],
+    ['Tarlac', 'Concepcion'],
+    ['Tarlac', 'Gerona'],
+    ['Tarlac', 'Capas'],
+    // CALABARZON
+    ['Cavite', 'Dasmariñas'],
+    ['Cavite', 'Bacoor'],
+    ['Cavite', 'Imus'],
+    ['Cavite', 'General Trias'],
+    ['Cavite', 'Trece Martires'],
+    ['Cavite', 'Silang'],
+    ['Laguna', 'Calamba'],
+    ['Laguna', 'Santa Rosa'],
+    ['Laguna', 'Biñan'],
+    ['Laguna', 'San Pablo'],
+    ['Laguna', 'Los Baños'],
+    ['Laguna', 'San Pedro City'],
+    ['Batangas', 'Batangas City'],
+    ['Batangas', 'Lipa'],
+    ['Batangas', 'Tanauan'],
+    ['Batangas', 'Santo Tomas'],
+    ['Batangas', 'Nasugbu'],
+    ['Rizal', 'Antipolo'],
+    ['Rizal', 'Cainta'],
+    ['Rizal', 'Taytay'],
+    ['Rizal', 'Binangonan'],
+    ['Rizal', 'Rodriguez'],
+    ['Quezon', 'Lucena'],
+    ['Quezon', 'Tayabas'],
+    ['Quezon', 'Sariaya'],
+    ['Quezon', 'Candelaria'],
+    // Visayas
+    ['Cebu', 'Cebu City'],
+    ['Cebu', 'Lapu-Lapu City'],
+    ['Cebu', 'Mandaue'],
+    ['Cebu', 'Talisay'],
+    ['Cebu', 'Carcar'],
+    ['Iloilo', 'Iloilo City'],
+    ['Iloilo', 'Oton'],
+    ['Iloilo', 'Pavia'],
+    ['Iloilo', 'Passi'],
+    ['Iloilo', 'Cabatuan'],
+    ['Negros Occidental', 'Bacolod'],
+    ['Negros Occidental', 'Bago'],
+    ['Negros Occidental', 'Talisay'],
+    ['Negros Occidental', 'Silay'],
+    ['Negros Occidental', 'Kabankalan'],
+    // Mindanao
+    ['Davao del Sur', 'Davao City'],
+    ['Davao del Sur', 'Digos'],
+    ['Zamboanga del Sur', 'Zamboanga City'],
+    ['Zamboanga del Sur', 'Pagadian'],
+    ['Misamis Oriental', 'Cagayan de Oro'],
+    ['Misamis Oriental', 'El Salvador'],
+    ['Misamis Oriental', 'Opol'],
+    ['South Cotabato', 'General Santos'],
+    ['South Cotabato', 'Koronadal'],
+    // Cordillera / Ilocos
+    ['Benguet', 'Baguio City'],
+    ['Benguet', 'La Trinidad'],
+    ['Benguet', 'Itogon'],
+    ['Ilocos Norte', 'Laoag'],
+    ['Ilocos Norte', 'Batac'],
+    ['Ilocos Sur', 'Vigan'],
+    ['Ilocos Sur', 'Candon'],
+    ['Pangasinan', 'Dagupan'],
+    ['Pangasinan', 'Urdaneta'],
+    ['Pangasinan', 'San Carlos'],
+    ['Pangasinan', 'Alaminos'],
+    ['Pangasinan', 'Lingayen']
+];
+
+$stmtSeedExists = $pdo->prepare("SELECT 1 FROM phil_locations WHERE province = :province AND city = :city LIMIT 1");
+$stmtSeedInsert = $pdo->prepare("INSERT INTO phil_locations (province, city) VALUES (:province, :city)");
+foreach ($seedData as $row) {
+    $stmtSeedExists->execute([':province' => $row[0], ':city' => $row[1]]);
+    if (!$stmtSeedExists->fetchColumn()) {
+        $stmtSeedInsert->execute([':province' => $row[0], ':city' => $row[1]]);
+    }
+}
+
+// Build province -> cities map from reference table
+$locations = $pdo->query("SELECT province, city FROM phil_locations ORDER BY province, city")
+    ->fetchAll(PDO::FETCH_ASSOC);
+$provinceCities = [];
+foreach ($locations as $loc) {
+    $province = $loc['province'];
+    $city = $loc['city'];
+    if (!isset($provinceCities[$province])) {
+        $provinceCities[$province] = [];
+    }
+    $provinceCities[$province][] = $city;
+}
+
 // Redirect if not logged in
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php?redirect=address');
@@ -12,6 +143,15 @@ $user_id = (int) $_SESSION['user_id'];
 $success_message = '';
 $error_message = '';
 
+// Check for success redirect
+if (isset($_GET['success'])) {
+    $success_message = 'Address added successfully.';
+}
+
+function normalize_space(string $v): string {
+    return trim(preg_replace('/\s+/', ' ', $v));
+}
+
 // Check for redirect message from checkout
 if (isset($_SESSION['checkout_redirect_message'])) {
     $error_message = $_SESSION['checkout_redirect_message'];
@@ -20,17 +160,69 @@ if (isset($_SESSION['checkout_redirect_message'])) {
 
 // Handle add address
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_address'])) {
-    $full_name = trim($_POST['full_name'] ?? '');
+    $full_name = normalize_space($_POST['full_name'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
-    $address_line1 = trim($_POST['address_line1'] ?? '');
-    $address_line2 = trim($_POST['address_line2'] ?? '');
-    $city = trim($_POST['city'] ?? '');
-    $state = trim($_POST['state'] ?? '');
+    $address_line1 = normalize_space($_POST['address_line1'] ?? '');
+    $address_line2 = normalize_space($_POST['address_line2'] ?? '');
+    $city = normalize_space($_POST['city'] ?? '');
+    $province = normalize_space($_POST['state'] ?? ''); // UI label says State/Province
     $postal_code = trim($_POST['postal_code'] ?? '');
     $is_default = isset($_POST['is_default']) ? 1 : 0;
-    
-    if (empty($full_name) || empty($phone) || empty($address_line1) || empty($city) || empty($postal_code)) {
-        $error_message = 'Please fill in all required fields.';
+
+    $errors = [];
+
+    // Full Name: required, min 2 chars, letters & spaces only
+    if ($full_name === '' || mb_strlen($full_name) < 2 || !preg_match('/^[A-Za-z ]+$/', $full_name)) {
+        $errors[] = 'Full Name is required and must contain only letters and spaces (min 2 characters).';
+    }
+
+    // Phone: PH mobile 09XXXXXXXXX or +639XXXXXXXXX
+    if (!preg_match('/^(09\d{9}|\+639\d{9})$/', $phone)) {
+        $errors[] = 'Phone Number must be a valid PH mobile (09XXXXXXXXX or +639XXXXXXXXX).';
+    }
+
+    // Address Line 1: required, min length 5
+    if ($address_line1 === '' || mb_strlen($address_line1) < 5) {
+        $errors[] = 'Address Line 1 must be at least 5 characters (complete street address).';
+    }
+
+    // Province: required and must be in predefined list
+    $provinceKey = null;
+    foreach ($provinceCities as $prov => $cities) {
+        if (strcasecmp($prov, $province) === 0) {
+            $provinceKey = $prov;
+            break;
+        }
+    }
+    if (!$provinceKey) {
+        $errors[] = 'Please select a valid Philippine province.';
+    }
+
+    // City: required and must belong to province
+    if ($city === '') {
+        $errors[] = 'City/Municipality is required.';
+    } elseif ($provinceKey) {
+        $validCity = false;
+        foreach ($provinceCities[$provinceKey] as $allowedCity) {
+            if (strcasecmp($allowedCity, $city) === 0) {
+                $validCity = true;
+                // Normalize to canonical casing
+                $city = $allowedCity;
+                break;
+            }
+        }
+        if (!$validCity) {
+            $errors[] = 'City/Municipality must belong to the selected province.';
+        }
+    }
+
+    // Postal Code: exactly 4 digits
+    if (!preg_match('/^\d{4}$/', $postal_code)) {
+        $errors[] = 'Postal Code must be exactly 4 digits.';
+    }
+
+    if ($errors) {
+        $error_message = implode(' ', $errors);
     } else {
         // If this is set as default, unset other defaults
         if ($is_default) {
@@ -48,11 +240,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_address'])) {
             ':addr1' => $address_line1,
             ':addr2' => $address_line2,
             ':city' => $city,
-            ':state' => $state,
+            ':state' => $provinceKey ?? $province,
             ':postal' => $postal_code,
             ':def' => $is_default
         ])) {
-            $success_message = 'Address added successfully.';
+            // Redirect to prevent duplicate form submission on page reload
+            header('Location: address.php?success=1');
+            exit();
         } else {
             $error_message = 'Failed to add address.';
         }
@@ -201,8 +395,15 @@ include 'includes/header.php';
                     <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST">
+                <form method="POST" id="addAddressForm">
                     <div class="modal-body">
+                        <!-- Validation Errors Alert -->
+                        <div id="validationErrorsAlert" class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;">
+                            <strong>Please fix the following errors:</strong>
+                            <ul id="validationErrorsList" class="mb-0 mt-2"></ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+
                         <div class="mb-3">
                             <label for="full_name" class="form-label">Full Name *</label>
                             <input type="text" class="form-control" id="full_name" name="full_name" required>
@@ -221,12 +422,19 @@ include 'includes/header.php';
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="city" class="form-label">City *</label>
-                                <input type="text" class="form-control" id="city" name="city" required>
+                                <label for="state" class="form-label">Province *</label>
+                                <select class="form-select" id="state" name="state" required>
+                                    <option value="">Select province</option>
+                                    <?php foreach ($provinceCities as $prov => $cities): ?>
+                                        <option value="<?php echo htmlspecialchars($prov); ?>"><?php echo htmlspecialchars($prov); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="state" class="form-label">State/Province</label>
-                                <input type="text" class="form-control" id="state" name="state">
+                                <label for="city" class="form-label">City *</label>
+                                <select class="form-select" id="city" name="city" required disabled>
+                                    <option value="">Select city/municipality</option>
+                                </select>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -251,8 +459,110 @@ include 'includes/header.php';
 
     <?php include 'includes/footer.php'; ?>
     <script>
-        // Handle address delete with custom confirmation
+        // Province -> cities map from DB
+        const provinceCities = <?php echo json_encode($provinceCities); ?>;
+
+        // Validate form inputs and display errors in modal
+        function validateAddressForm() {
+            const errors = [];
+            const fullName = document.getElementById('full_name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const address1 = document.getElementById('address_line1').value.trim();
+            const province = document.getElementById('state').value.trim();
+            const city = document.getElementById('city').value.trim();
+            const postalCode = document.getElementById('postal_code').value.trim();
+
+            // Full Name validation: required, min 2 chars, letters & spaces only
+            if (!fullName || fullName.length < 2) {
+                errors.push('Full Name is required and must be at least 2 characters.');
+            } else if (!/^[A-Za-z ]+$/.test(fullName)) {
+                errors.push('Full Name must contain only letters and spaces.');
+            }
+
+            // Phone validation: PH mobile 09XXXXXXXXX or +639XXXXXXXXX
+            if (!phone || !/^(09\d{9}|\+639\d{9})$/.test(phone)) {
+                errors.push('Phone Number must be a valid PH mobile (09XXXXXXXXX or +639XXXXXXXXX).');
+            }
+
+            // Address Line 1 validation: required, min 5 chars
+            if (!address1 || address1.length < 5) {
+                errors.push('Address Line 1 must be at least 5 characters (complete street address).');
+            }
+
+            // Province validation: required
+            if (!province) {
+                errors.push('Please select a valid Philippine province.');
+            }
+
+            // City validation: required
+            if (!city) {
+                errors.push('City/Municipality is required.');
+            }
+
+            // Postal Code validation: exactly 4 digits
+            if (!postalCode || !/^\d{4}$/.test(postalCode)) {
+                errors.push('Postal Code must be exactly 4 digits.');
+            }
+
+            return errors;
+        }
+
+        // Display validation errors in modal
+        function showValidationErrors(errors) {
+            const alertDiv = document.getElementById('validationErrorsAlert');
+            const errorsList = document.getElementById('validationErrorsList');
+            
+            if (errors.length > 0) {
+                errorsList.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+                alertDiv.style.display = 'block';
+                alertDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return false;
+            } else {
+                alertDiv.style.display = 'none';
+                return true;
+            }
+        }
+
+        // Populate city options based on selected province
+        function populateCities(provinceValue) {
+            const citySelect = document.getElementById('city');
+            citySelect.innerHTML = '<option value="">Select city/municipality</option>';
+            const cities = provinceCities[provinceValue] || [];
+            cities.forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = city;
+                opt.textContent = city;
+                citySelect.appendChild(opt);
+            });
+            citySelect.disabled = cities.length === 0;
+        }
+
+        // Handle address delete with custom confirmation and wire up dropdown linkage
         document.addEventListener('DOMContentLoaded', function() {
+            const provinceSelect = document.getElementById('state');
+            const citySelect = document.getElementById('city');
+            const addAddressForm = document.getElementById('addAddressForm');
+
+            provinceSelect.addEventListener('change', function() {
+                populateCities(this.value);
+            });
+
+            const addAddressModal = document.getElementById('addAddressModal');
+            addAddressModal.addEventListener('show.bs.modal', function() {
+                provinceSelect.value = '';
+                citySelect.innerHTML = '<option value="">Select city/municipality</option>';
+                citySelect.disabled = true;
+                document.getElementById('validationErrorsAlert').style.display = 'none';
+            });
+
+            // Handle form submission with client-side validation
+            addAddressForm.addEventListener('submit', function(e) {
+                const errors = validateAddressForm();
+                if (!showValidationErrors(errors)) {
+                    e.preventDefault();
+                }
+            });
+
             document.querySelectorAll('.delete-address-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const form = this.closest('.delete-address-form');

@@ -291,23 +291,24 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       updateCartBadge();
-
-      // Only mark buy-now after a successful add
-      if (redirectAfter && productIdForBuyNow) {
-        sessionStorage.setItem('buyNowProductId', productIdForBuyNow);
-      } else {
-        sessionStorage.removeItem('buyNowProductId');
-      }
-
-      if (redirectAfter) {
-        window.location.href = 'checkout.php';
-      } else {
-        showToast('Added to cart', 'success');
-      }
+      showToast('Added to cart', 'success');
     } catch (err) {
       showToast('Network error. Please try again.', 'error');
     } finally {
       addBtn.disabled = false;
+      buyBtn.disabled = false;
+    }
+  }
+
+  async function buyNow(quantity) {
+    buyBtn.disabled = true;
+    const productId = '<?php echo (int) $productId; ?>';
+    
+    // Buy Now: skip cart and go straight to checkout
+    try {
+      window.location.href = 'checkout.php?buyNow=1&productId=' + productId + '&qty=' + quantity;
+    } catch (err) {
+      showToast('Error preparing checkout', 'error');
       buyBtn.disabled = false;
     }
   }
@@ -317,15 +318,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const qty = sanitizeQty();
     // Regular add: clear any previous buy-now flag
     sessionStorage.removeItem('buyNowProductId');
+    sessionStorage.removeItem('buyNowQuantity');
     addToCart(qty, false, null);
   });
 
   buyBtn.addEventListener('click', function(e) {
     e.preventDefault();
     const qty = sanitizeQty();
-    const productId = '<?php echo (int) $productId; ?>';
-    // Buy Now: set flag only after add succeeds
-    addToCart(qty, true, productId);
+    // Buy Now: skip cart and go straight to checkout
+    buyNow(qty);
   });
 
   document.querySelectorAll('.product-suggestion').forEach(function(card) {

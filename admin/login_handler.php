@@ -52,7 +52,10 @@ try {
 
     admin_login($admin);
 
-    header('Location: ' . ($redirect ?: 'index.php'));
+    // Use relative path since DocumentRoot is already set to WebDev1.2
+    $redirectPath = ($redirect && $redirect !== '') ? $redirect : 'index.php';
+    
+    header('Location: ' . $redirectPath);
     exit();
 } catch (Exception $e) {
     error_log('Admin login error: ' . $e->getMessage());

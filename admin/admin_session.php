@@ -18,13 +18,13 @@ function admin_session_start(): void
     }
 
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-    $cookiePath = '/WebDev1.2/admin'; // limit cookie to admin area for isolation
+    $cookiePath = '/admin'; // limit cookie to admin area for isolation
 
     session_name('JEWELUXE_ADMIN');
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => $cookiePath,
-        'domain' => $_SERVER['HTTP_HOST'] ?? '',
+        'domain' => '',
         'secure' => $secure,
         'httponly' => true,
         'samesite' => 'Lax',

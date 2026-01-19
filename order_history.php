@@ -157,64 +157,165 @@ include 'includes/header.php';
                                         $payment_class = $payment_map[$payment_key][1] ?? 'pill default';
                                         ?>
 
-                                        <div class="order-card-ui" data-status="<?php echo $status_key; ?>">
-                                            <div class="order-card-top d-flex flex-wrap justify-content-between align-items-start">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <span class="status-pill <?php echo $status_class; ?>"><?php echo htmlspecialchars($status_label); ?></span>
-                                                    <div class="small text-muted">Order No: <?php echo htmlspecialchars($order['order_number']); ?></div>
+                                        <div class="order-card-luxury" data-status="<?php echo $status_key; ?>" data-order-id="<?php echo $order['order_id']; ?>">
+                                            <!-- Card Header -->
+                                            <div class="order-card-header">
+                                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                                    <span class="order-status-badge status-<?php echo $status_key; ?>">
+                                                        <i class="fas fa-<?php echo $status_key === 'delivered' ? 'check-circle' : ($status_key === 'shipped' ? 'truck' : ($status_key === 'cancelled' ? 'times-circle' : 'clock')); ?>"></i>
+                                                        <?php echo htmlspecialchars($status_label); ?>
+                                                    </span>
+                                                    <div class="small text-muted">
+                                                        <i class="fas fa-hashtag" style="font-size: 10px;"></i> 
+                                                        <?php echo htmlspecialchars($order['order_number']); ?>
+                                                    </div>
                                                 </div>
                                                 <div class="text-end">
-                                                    <div class="small text-muted">Total</div>
-                                                    <div class="fw-semibold">₱<?php echo number_format($order['total_amount'], 2); ?></div>
+                                                    <div class="small text-muted">Order Date</div>
+                                                    <div class="fw-semibold"><?php echo date('M j, Y', strtotime($order['created_at'])); ?></div>
                                                 </div>
                                             </div>
-                                            <div class="order-body d-flex gap-3 align-items-center">
-                                                <div class="order-thumb rounded-3 overflow-hidden bg-light">
-                                                    <?php if ($preview && !empty($preview['product_image'])): ?>
-                                                        <img src="<?php echo htmlspecialchars($preview['product_image']); ?>" alt="<?php echo htmlspecialchars($preview['product_name']); ?>">
-                                                    <?php else: ?>
-                                                        <div class="thumb-placeholder">No Image</div>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-semibold mb-1">
-                                                        <?php echo $preview ? htmlspecialchars($preview['product_name']) : 'Items in this order'; ?>
-                                                    </div>
-                                                    <div class="text-muted small mb-1">
-                                                        <?php if ($preview): ?>
-                                                            ₱<?php echo number_format($preview['unit_price'], 2); ?> × <?php echo (int) $preview['quantity']; ?>
+
+                                            <!-- Card Body -->
+                                            <div class="order-card-body">
+                                                <div class="d-flex gap-3 align-items-center flex-wrap">
+                                                    <div class="order-product-thumb">
+                                                        <?php if ($preview && !empty($preview['product_image'])): ?>
+                                                            <img src="<?php echo htmlspecialchars($preview['product_image']); ?>" alt="<?php echo htmlspecialchars($preview['product_name']); ?>">
                                                         <?php else: ?>
-                                                            <?php echo (int) $order['item_count']; ?> item(s)
+                                                            <div class="thumb-placeholder">
+                                                                <i class="fas fa-gem fs-3 text-muted"></i>
+                                                            </div>
                                                         <?php endif; ?>
                                                     </div>
-                                                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                                                        <span class="status-pill <?php echo $payment_class; ?>"><?php echo htmlspecialchars($payment_label); ?></span>
-                                                        <span class="text-muted small">Payment: <?php echo ucfirst(htmlspecialchars($order['payment_method'])); ?></span>
+                                                    
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-bold mb-1 text-dark" style="font-size: 16px;">
+                                                            <?php echo $preview ? htmlspecialchars($preview['product_name']) : 'Order Items'; ?>
+                                                        </div>
+                                                        <div class="d-flex gap-3 flex-wrap align-items-center mb-2">
+                                                            <span class="text-muted small">
+                                                                <i class="fas fa-box me-1"></i>
+                                                                <?php echo (int) $order['item_count']; ?> item<?php echo $order['item_count'] > 1 ? 's' : ''; ?>
+                                                            </span>
+                                                            <span class="status-pill <?php echo $payment_class; ?>">
+                                                                <?php echo htmlspecialchars($payment_label); ?>
+                                                            </span>
+                                                            <span class="text-muted small">
+                                                                <i class="fas fa-credit-card me-1"></i>
+                                                                <?php echo ucfirst(htmlspecialchars($order['payment_method'])); ?>
+                                                            </span>
+                                                        </div>
+                                                        <div class="fw-bold text-dark" style="font-size: 20px;">
+                                                            ₱<?php echo number_format($order['total_amount'], 2); ?>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div class="d-flex flex-column align-items-end gap-2">
-                                                    <?php if ($status_key === 'pending'): ?>
-                                                        <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder(<?php echo $order['order_id']; ?>)">Cancel</button>
-                                                    <?php endif; ?>
-                                                    <button class="btn btn-outline-primary btn-sm" onclick="toggleOrderDetails(<?php echo $order['order_id']; ?>)">Order Details</button>
+                                                    
+                                                    <div class="d-flex flex-column gap-2">
+                                                        <?php if ($status_key === 'delivered'): ?>
+                                                            <button class="btn-reorder" onclick="reorderItems(<?php echo $order['order_id']; ?>)">
+                                                                <i class="fas fa-redo"></i>
+                                                                Reorder
+                                                            </button>
+                                                        <?php endif; ?>
+                                                        <?php if ($status_key === 'pending' || $status_key === 'processing'): ?>
+                                                            <button class="btn-order-danger" onclick="cancelOrder(<?php echo $order['order_id']; ?>)">
+                                                                <i class="fas fa-times"></i>
+                                                                Cancel Order
+                                                            </button>
+                                                        <?php endif; ?>
+                                                        <button class="btn-order-primary" onclick="toggleOrderDetails(<?php echo $order['order_id']; ?>)">
+                                                            <span>View Details</span>
+                                                            <i class="fas fa-chevron-down expand-toggle" data-order="<?php echo $order['order_id']; ?>"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div id="order-details-<?php echo $order['order_id']; ?>" class="order-details-card" style="display: none;">
-                                            <div class="card border-0 shadow-sm rounded-4">
-                                                <div class="card-body">
-                                                    <?php
-                                                    $items_sql = "SELECT oi.*, p.product_name, p.product_image
-                                                                  FROM order_items oi
-                                                                  JOIN products p ON oi.product_id = p.product_id
-                                                                  WHERE oi.order_id = :oid";
-                                                    $stmt_items = $pdo->prepare($items_sql);
-                                                    $stmt_items->execute([':oid' => $order['order_id']]);
-                                                    $order_items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
-                                                    ?>
+                                        <!-- Expandable Order Details -->
+                                        <div id="order-details-<?php echo $order['order_id']; ?>" class="order-details-expandable">
+                                            <div class="order-details-content">
+                                                <?php
+                                                // Order Timeline - show for shipped/delivered orders
+                                                if ($status_key === 'shipped' || $status_key === 'delivered'):
+                                                ?>
+                                                <div class="order-timeline">
+                                                    <div class="timeline-step completed">
+                                                        <div class="timeline-icon">
+                                                            <i class="fas fa-check"></i>
+                                                        </div>
+                                                        <div class="timeline-content">
+                                                            <div class="timeline-title">Order Placed</div>
+                                                            <div class="timeline-date"><?php echo date('M j, g:i A', strtotime($order['created_at'])); ?></div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="timeline-step completed">
+                                                        <div class="timeline-icon">
+                                                            <i class="fas fa-box"></i>
+                                                        </div>
+                                                        <div class="timeline-content">
+                                                            <div class="timeline-title">Packed</div>
+                                                            <div class="timeline-date"><?php echo date('M j', strtotime($order['created_at'] . ' +1 day')); ?></div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="timeline-step <?php echo $status_key === 'shipped' ? 'active' : 'completed'; ?>">
+                                                        <div class="timeline-icon">
+                                                            <i class="fas fa-truck"></i>
+                                                        </div>
+                                                        <div class="timeline-content">
+                                                            <div class="timeline-title">Out for Delivery</div>
+                                                            <div class="timeline-date"><?php echo $status_key === 'shipped' ? 'In transit' : date('M j', strtotime($order['updated_at'])); ?></div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="timeline-step <?php echo $status_key === 'delivered' ? 'completed' : ''; ?>">
+                                                        <div class="timeline-icon">
+                                                            <i class="fas fa-home"></i>
+                                                        </div>
+                                                        <div class="timeline-content">
+                                                            <div class="timeline-title">Delivered</div>
+                                                            <div class="timeline-date"><?php echo $status_key === 'delivered' ? date('M j', strtotime($order['updated_at'])) : 'Est. ' . date('M j', strtotime($order['created_at'] . ' +5 days')); ?></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <?php endif; ?>
 
-                                                    <?php if (count($order_items) > 0): ?>
+                                                <?php
+                                                // Estimated delivery for processing/pending orders
+                                                if ($status_key === 'processing' || $status_key === 'pending'):
+                                                    $est_delivery = date('l, F j, Y', strtotime($order['created_at'] . ' +5 days'));
+                                                ?>
+                                                <div class="delivery-estimate">
+                                                    <div class="delivery-icon">
+                                                        <i class="fas fa-calendar-check"></i>
+                                                    </div>
+                                                    <div class="delivery-info">
+                                                        <div class="delivery-label">Estimated Delivery</div>
+                                                        <div class="delivery-date"><?php echo $est_delivery; ?></div>
+                                                        <div class="delivery-time">Between 10:00 AM - 5:00 PM</div>
+                                                    </div>
+                                                </div>
+                                                <?php endif; ?>
+
+                                                <?php
+                                                $items_sql = "SELECT oi.*, p.product_name, p.product_image
+                                                              FROM order_items oi
+                                                              JOIN products p ON oi.product_id = p.product_id
+                                                              WHERE oi.order_id = :oid";
+                                                $stmt_items = $pdo->prepare($items_sql);
+                                                $stmt_items->execute([':oid' => $order['order_id']]);
+                                                $order_items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+                                                ?>
+
+                                                <?php if (count($order_items) > 0): ?>
+                                                    <div class="mb-4">
+                                                        <h6 class="fw-bold mb-3">
+                                                            <i class="fas fa-shopping-bag me-2"></i>
+                                                            All Items (<?php echo count($order_items); ?>)
+                                                        </h6>
                                                         <?php foreach ($order_items as $item): ?>
                                                             <div class="row align-items-center mb-3 pb-3 border-bottom">
                                                                 <div class="col-md-2 col-3">
@@ -222,81 +323,80 @@ include 'includes/header.php';
                                                                         <?php if (!empty($item['product_image'])): ?>
                                                                             <img src="<?php echo htmlspecialchars($item['product_image']); ?>" alt="<?php echo htmlspecialchars($item['product_name']); ?>">
                                                                         <?php else: ?>
-                                                                            <div class="thumb-placeholder">No Image</div>
+                                                                            <div class="thumb-placeholder">
+                                                                                <i class="fas fa-image"></i>
+                                                                            </div>
                                                                         <?php endif; ?>
                                                                     </div>
                                                                 </div>
                                                                 <div class="col-md-6 col-9">
                                                                     <h6 class="mb-1"><?php echo htmlspecialchars($item['product_name']); ?></h6>
-                                                                    <p class="text-muted mb-0">Quantity: <?php echo (int) $item['quantity']; ?></p>
+                                                                    <p class="text-muted mb-0 small">
+                                                                        <i class="fas fa-cubes me-1"></i>
+                                                                        Quantity: <?php echo (int) $item['quantity']; ?>
+                                                                    </p>
                                                                 </div>
                                                                 <div class="col-md-4 text-md-end mt-2 mt-md-0">
-                                                                    <p class="mb-0">₱<?php echo number_format($item['unit_price'], 2); ?> each</p>
-                                                                    <strong>₱<?php echo number_format($item['total_price'], 2); ?></strong>
+                                                                    <p class="mb-0 text-muted small">₱<?php echo number_format($item['unit_price'], 2); ?> each</p>
+                                                                    <strong class="text-dark">₱<?php echo number_format($item['total_price'], 2); ?></strong>
                                                                 </div>
                                                             </div>
                                                         <?php endforeach; ?>
-                                                    <?php endif; ?>
+                                                    </div>
+                                                <?php endif; ?>
 
-                                                    <div class="row g-3">
-                                                        <div class="col-md-8">
-                                                            <?php if (!empty($order['shipping_address'])): ?>
-                                                                <div class="p-3 rounded-3 bg-light">
-                                                                    <div class="fw-semibold mb-1">Shipping Address</div>
-                                                                    <p class="mb-0 small"><?php echo nl2br(htmlspecialchars($order['shipping_address'])); ?></p>
+                                                <div class="row g-3">
+                                                    <div class="col-md-7">
+                                                        <?php if (!empty($order['shipping_address'])): ?>
+                                                            <div class="p-3 rounded-3 bg-white border h-100">
+                                                                <div class="fw-bold mb-2">
+                                                                    <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                                                                    Shipping Address
                                                                 </div>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <div class="order-summary-premium">
-                                                                <div class="order-summary-header">
-                                                                    <div class="order-summary-icon">
-                                                                        <i class="fas fa-receipt"></i>
+                                                                <p class="mb-0 small text-muted"><?php echo nl2br(htmlspecialchars($order['shipping_address'])); ?></p>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <div class="order-summary-luxury">
+                                                            <div class="order-summary-row">
+                                                                <div class="order-summary-label">
+                                                                    <div class="order-summary-label-icon">
+                                                                        <i class="fas fa-shopping-cart"></i>
                                                                     </div>
-                                                                    <h4 class="order-summary-title">Order Summary</h4>
+                                                                    Subtotal
                                                                 </div>
-                                                                
-                                                                <div class="order-summary-row">
-                                                                    <div class="order-summary-label">
-                                                                        <div class="order-summary-label-icon">
-                                                                            <i class="fas fa-shopping-cart"></i>
-                                                                        </div>
-                                                                        Subtotal
+                                                                <div class="order-summary-value">₱<?php echo number_format($order['subtotal'], 2); ?></div>
+                                                            </div>
+                                                            
+                                                            <div class="order-summary-row">
+                                                                <div class="order-summary-label">
+                                                                    <div class="order-summary-label-icon">
+                                                                        <i class="fas fa-truck"></i>
                                                                     </div>
-                                                                    <div class="order-summary-value">₱<?php echo number_format($order['subtotal'], 2); ?></div>
+                                                                    Shipping
                                                                 </div>
-                                                                
-                                                                <div class="order-summary-row">
-                                                                    <div class="order-summary-label">
-                                                                        <div class="order-summary-label-icon">
-                                                                            <i class="fas fa-truck"></i>
-                                                                        </div>
-                                                                        Shipping
+                                                                <div class="order-summary-value">₱<?php echo number_format($order['shipping_cost'], 2); ?></div>
+                                                            </div>
+                                                            
+                                                            <div class="order-summary-row">
+                                                                <div class="order-summary-label">
+                                                                    <div class="order-summary-label-icon">
+                                                                        <i class="fas fa-calculator"></i>
                                                                     </div>
-                                                                    <div class="order-summary-value">₱<?php echo number_format($order['shipping_cost'], 2); ?></div>
+                                                                    Tax
                                                                 </div>
-                                                                
-                                                                <div class="order-summary-row">
-                                                                    <div class="order-summary-label">
-                                                                        <div class="order-summary-label-icon">
-                                                                            <i class="fas fa-calculator"></i>
-                                                                        </div>
-                                                                        Tax
-                                                                    </div>
-                                                                    <div class="order-summary-value">₱<?php echo number_format($order['tax'], 2); ?></div>
+                                                                <div class="order-summary-value">₱<?php echo number_format($order['tax'], 2); ?></div>
+                                                            </div>
+                                                            
+                                                            <div class="order-summary-divider"></div>
+                                                            
+                                                            <div class="order-summary-row total-row">
+                                                                <div class="order-summary-label">
+                                                                    <i class="fas fa-money-bill-wave me-2"></i>
+                                                                    Total
                                                                 </div>
-                                                                
-                                                                <div class="order-summary-divider"></div>
-                                                                
-                                                                <div class="order-summary-row total-row">
-                                                                    <div class="order-summary-label">
-                                                                        <div class="order-summary-label-icon">
-                                                                            <i class="fas fa-crown"></i>
-                                                                        </div>
-                                                                        Total Amount
-                                                                    </div>
-                                                                    <div class="order-summary-value">₱<?php echo number_format($order['total_amount'], 2); ?></div>
-                                                                </div>
+                                                                <div class="order-summary-value">₱<?php echo number_format($order['total_amount'], 2); ?></div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -323,17 +423,40 @@ include 'includes/header.php';
     <?php include 'includes/footer.php'; ?>
 
     <script>
+        // Toggle order details with smooth expand/collapse
         function toggleOrderDetails(orderId) {
-            const detailsDiv = document.getElementById('order-details-' + orderId);
-            if (!detailsDiv) return;
-            const isHidden = detailsDiv.style.display === 'none' || detailsDiv.style.display === '';
-            detailsDiv.style.display = isHidden ? 'block' : 'none';
+            const detailsEl = document.getElementById('order-details-' + orderId);
+            const toggleIcon = document.querySelector(`[data-order="${orderId}"] .expand-toggle`);
+            
+            if (!detailsEl) return;
+            
+            if (detailsEl.classList.contains('expanded')) {
+                detailsEl.classList.remove('expanded');
+                if (toggleIcon) toggleIcon.classList.remove('expanded');
+            } else {
+                // Close all other expanded orders for clean UX
+                document.querySelectorAll('.order-details-expandable.expanded').forEach(el => {
+                    el.classList.remove('expanded');
+                });
+                document.querySelectorAll('.expand-toggle.expanded').forEach(icon => {
+                    icon.classList.remove('expanded');
+                });
+                
+                detailsEl.classList.add('expanded');
+                if (toggleIcon) toggleIcon.classList.add('expanded');
+                
+                // Smooth scroll to details
+                setTimeout(() => {
+                    detailsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
         }
 
+        // Cancel order function
         function cancelOrder(orderId) {
             ConfirmModal.show(
                 '⚠️ Cancel Order',
-                'Are you sure you want to cancel this order?',
+                'Are you sure you want to cancel this order? This action cannot be undone.',
                 function() {
                     fetch('cancel_order.php', {
                         method: 'POST',
@@ -359,14 +482,48 @@ include 'includes/header.php';
             );
         }
 
+        // Reorder items function
+        function reorderItems(orderId) {
+            ConfirmModal.show(
+                '🛍️ Reorder Items',
+                'Add all items from this order to your cart?',
+                function() {
+                    fetch('reorder.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: orderId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            ToastNotification.success('Items added to cart!');
+                            setTimeout(() => window.location.href = 'cart.php', 1500);
+                        } else {
+                            ToastNotification.error(data.message || 'Failed to reorder items.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        ToastNotification.error('An error occurred while adding items to cart.');
+                    });
+                }
+            );
+        }
+
+        // Register filter buttons
         (function registerFilters() {
             const buttons = document.querySelectorAll('#ordersFilter .nav-link');
-            const cards = document.querySelectorAll('.order-card-ui');
+            const cards = document.querySelectorAll('.order-card-luxury, .order-card-ui');
+            
             buttons.forEach(btn => {
                 btn.addEventListener('click', () => {
+                    // Update active state
                     buttons.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
+                    
                     const filter = btn.dataset.filter;
+                    
+                    // Filter cards
                     cards.forEach(card => {
                         if (!filter || filter === 'all') {
                             card.style.display = '';

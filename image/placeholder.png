@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <defs>
+    <style>
+      .placeholder-bg { fill: #f0f0f0; }
+      .placeholder-text { fill: #999; font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; }
+      .placeholder-icon { fill: #ccc; }
+    </style>
+  </defs>
+  <rect class="placeholder-bg" width="200" height="200"/>
+  <rect class="placeholder-icon" x="75" y="60" width="50" height="50" rx="3"/>
+  <circle class="placeholder-icon" cx="90" cy="80" r="8"/>
+  <polygon class="placeholder-icon" points="70,110 100,80 130,110"/>
+  <text class="placeholder-text" x="100" y="145">No Image</text>
+  <text class="placeholder-text" x="100" y="165" font-size="12">Available</text>
+</svg>

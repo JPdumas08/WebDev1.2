@@ -767,7 +767,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const registered = params.get('registered');
 
   const loginMessages = {
-    ok: { type: 'success', text: 'Login successful! Welcome back.' },
+    ok: { type: 'success', text: 'Login successful!' },
     missing: { type: 'error', text: 'Please fill in all required fields.' },
     notfound: { type: 'error', text: 'User not found. Please check your credentials.' },
     bad: { type: 'error', text: 'Invalid password. Please try again.' },

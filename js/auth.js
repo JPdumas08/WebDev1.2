@@ -153,7 +153,7 @@ $(document).ready(function() {
         const toast = document.createElement('div');
         toast.innerHTML = `
           <div class="alert-dismissible fade show text-white mb-3" role="alert" style="min-width: 350px; font-weight: 500; border-radius: 6px; background-color: #22c55e; border: none; padding: 1rem 1.25rem;">
-            Login successful! Welcome back.
+            Login successful!
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
           </div>
         `;

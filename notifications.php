@@ -44,20 +44,45 @@ $unread_count = count(array_filter($notifications, fn($n) => !$n['is_read']));
 
 // Sample notifications if none exist (for demo)
 if (empty($notifications)) {
-    $sample_notifications = [
-        ['title' => 'Welcome to Jeweluxe!', 'message' => 'Thank you for joining us. Start shopping for exquisite jewelry pieces.', 'type' => 'success'],
-        ['title' => 'Order Updates', 'message' => 'We will notify you about your order status here.', 'type' => 'info'],
-    ];
+    // First check if related_id column exists
+    $columns = $pdo->query("SHOW COLUMNS FROM notifications LIKE 'related_id'")->fetch();
     
-    foreach ($sample_notifications as $notif) {
-        $insert_sql = "INSERT INTO notifications (user_id, title, message, type) VALUES (:uid, :title, :message, :type)";
-        $stmt = $pdo->prepare($insert_sql);
-        $stmt->execute([
-            ':uid' => $user_id,
-            ':title' => $notif['title'],
-            ':message' => $notif['message'],
-            ':type' => $notif['type']
-        ]);
+    if ($columns) {
+        // New schema with related_id
+        $sample_notifications = [
+            ['title' => 'Welcome to Jeweluxe!', 'message' => 'Thank you for joining us. Start shopping for exquisite jewelry pieces.', 'type' => 'system'],
+            ['title' => 'Order Updates', 'message' => 'We will notify you about your order status here.', 'type' => 'system'],
+        ];
+        
+        foreach ($sample_notifications as $notif) {
+            $insert_sql = "INSERT INTO notifications (user_id, type, title, message, related_id, is_read, created_at) 
+                           VALUES (:uid, :type, :title, :message, NULL, 0, NOW())";
+            $stmt = $pdo->prepare($insert_sql);
+            $stmt->execute([
+                ':uid' => $user_id,
+                ':type' => $notif['type'],
+                ':title' => $notif['title'],
+                ':message' => $notif['message']
+            ]);
+        }
+    } else {
+        // Old schema without related_id
+        $sample_notifications = [
+            ['title' => 'Welcome to Jeweluxe!', 'message' => 'Thank you for joining us. Start shopping for exquisite jewelry pieces.', 'type' => 'system'],
+            ['title' => 'Order Updates', 'message' => 'We will notify you about your order status here.', 'type' => 'system'],
+        ];
+        
+        foreach ($sample_notifications as $notif) {
+            $insert_sql = "INSERT INTO notifications (user_id, type, title, message, is_read, created_at) 
+                           VALUES (:uid, :type, :title, :message, 0, NOW())";
+            $stmt = $pdo->prepare($insert_sql);
+            $stmt->execute([
+                ':uid' => $user_id,
+                ':type' => $notif['type'],
+                ':title' => $notif['title'],
+                ':message' => $notif['message']
+            ]);
+        }
     }
     
     // Refresh notifications
@@ -76,9 +101,16 @@ include 'includes/header.php';
 <style>
     .notification-item {
             transition: background-color 0.2s;
+            position: relative;
         }
         .notification-item:hover {
             background-color: #f8f9fa;
+        }
+        .notification-item.clickable {
+            cursor: pointer;
+        }
+        .notification-item.clickable:hover {
+            background-color: #e8f4ff;
         }
         .notification-unread {
             background-color: #e7f3ff;
@@ -131,8 +163,44 @@ include 'includes/header.php';
                                 </div>
                             <?php else: ?>
                                 <div class="list-group list-group-flush">
-                                    <?php foreach ($notifications as $notification): ?>
-                                        <div class="list-group-item notification-item <?php echo !$notification['is_read'] ? 'notification-unread' : ''; ?> p-4">
+                                    <?php foreach ($notifications as $notification): 
+                                        // Determine notification link
+                                        $notification_link = '';
+                                        $is_clickable = false;
+                                        
+                                        // Check if related_id exists in notification
+                                        $related_id = isset($notification['related_id']) ? $notification['related_id'] : null;
+                                        
+                                        // Get notification type
+                                        $notif_type = isset($notification['type']) ? $notification['type'] : '';
+                                        
+                                        switch ($notif_type) {
+                                            case 'order_status':
+                                            case 'order_update':
+                                                if ($related_id) {
+                                                    $notification_link = 'order_history.php?view=' . $related_id;
+                                                    $is_clickable = true;
+                                                } else {
+                                                    // If no related_id, go to general order history
+                                                    $notification_link = 'order_history.php';
+                                                    $is_clickable = true;
+                                                }
+                                                break;
+                                            case 'message_reply':
+                                            case 'info': // Handle old schema where message_reply was stored as 'info'
+                                                // Check if this is a message reply by title
+                                                if (stripos($notification['title'], 'reply') !== false || stripos($notification['title'], 'message') !== false) {
+                                                    $notification_link = 'my_messages.php';
+                                                    $is_clickable = true;
+                                                }
+                                                break;
+                                        }
+                                    ?>
+                                        <div class="list-group-item notification-item <?php echo !$notification['is_read'] ? 'notification-unread' : ''; ?> <?php echo $is_clickable ? 'clickable' : ''; ?> p-4" 
+                                             <?php if ($is_clickable): ?>
+                                             onclick="handleNotificationClick(event, '<?php echo htmlspecialchars($notification_link, ENT_QUOTES); ?>', <?php echo $notification['notification_id']; ?>)"
+                                             <?php endif; ?>
+                                             data-notification-id="<?php echo $notification['notification_id']; ?>">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
                                                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -141,22 +209,59 @@ include 'includes/header.php';
                                                             <span class="badge bg-primary notification-badge">New</span>
                                                         <?php endif; ?>
                                                         <?php
+                                                        // Map notification types to badge colors
                                                         $badge_class = 'secondary';
-                                                        switch ($notification['type']) {
-                                                            case 'success': $badge_class = 'success'; break;
-                                                            case 'warning': $badge_class = 'warning'; break;
-                                                            case 'error': $badge_class = 'danger'; break;
-                                                            case 'info': default: $badge_class = 'info'; break;
+                                                        $type_display = ucfirst(str_replace('_', ' ', $notification['type']));
+                                                        
+                                                        // Check if it's a message reply by title (for old 'info' type)
+                                                        $is_message_reply = ($notification['type'] === 'message_reply') || 
+                                                                          ($notification['type'] === 'info' && 
+                                                                           (stripos($notification['title'], 'reply') !== false || 
+                                                                            stripos($notification['title'], 'message') !== false));
+                                                        
+                                                        if ($is_message_reply) {
+                                                            $badge_class = 'success';
+                                                            $type_display = 'Reply';
+                                                        } else {
+                                                            switch ($notification['type']) {
+                                                                case 'order_status': 
+                                                                    $badge_class = 'primary'; 
+                                                                    $type_display = 'Order Status';
+                                                                    break;
+                                                                case 'order_update': 
+                                                                    $badge_class = 'warning'; 
+                                                                    $type_display = 'Order Update';
+                                                                    break;
+                                                                case 'system': 
+                                                                    $badge_class = 'info'; 
+                                                                    $type_display = 'System';
+                                                                    break;
+                                                                case 'promotion': 
+                                                                    $badge_class = 'danger'; 
+                                                                    $type_display = 'Promotion';
+                                                                    break;
+                                                                case 'info':
+                                                                    $badge_class = 'info';
+                                                                    $type_display = 'Info';
+                                                                    break;
+                                                            }
                                                         }
                                                         ?>
                                                         <span class="badge bg-<?php echo $badge_class; ?> notification-badge">
-                                                            <?php echo ucfirst($notification['type']); ?>
+                                                            <?php echo $type_display; ?>
                                                         </span>
                                                     </div>
                                                     <p class="mb-2 text-muted"><?php echo htmlspecialchars($notification['message']); ?></p>
                                                     <small class="text-muted">
                                                         <?php echo date('M j, Y g:i A', strtotime($notification['created_at'])); ?>
                                                     </small>
+                                                    <?php if (isset($notification['related_id']) && $notification['related_id'] && isset($notification['type']) && in_array($notification['type'], ['order_status', 'order_update'])): ?>
+                                                        <div class="mt-2">
+                                                            <a href="order_history.php?view=<?php echo $notification['related_id']; ?>" class="btn btn-sm btn-outline-primary">
+                                                                <i class="fas fa-external-link-alt me-1"></i>View Order
+                                                            </a>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="d-flex gap-2 ms-3">
                                                     <?php if (!$notification['is_read']): ?>
@@ -188,6 +293,31 @@ include 'includes/header.php';
 
     <?php include 'includes/footer.php'; ?>
     <script>
+        // Handle notification click
+        function handleNotificationClick(event, link, notificationId) {
+            // Don't trigger if clicking on buttons
+            if (event.target.closest('button') || event.target.closest('form') || event.target.closest('a')) {
+                return;
+            }
+            
+            // Mark as read via AJAX
+            const formData = new FormData();
+            formData.append('notification_id', notificationId);
+            formData.append('mark_read', '1');
+            
+            fetch('', {
+                method: 'POST',
+                body: formData
+            }).then(() => {
+                // Navigate to the link
+                window.location.href = link;
+            }).catch(error => {
+                console.error('Error marking notification as read:', error);
+                // Still navigate even if marking as read fails
+                window.location.href = link;
+            });
+        }
+        
         // Handle notification delete with custom confirmation
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.delete-notification-btn').forEach(btn => {

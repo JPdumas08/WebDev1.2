@@ -49,8 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
     $update_payment_stmt = $pdo->prepare($update_payment_sql);
     $update_payment_stmt->execute([':oid' => $order_id]);
     
-    // Redirect to order confirmation page
-    header('Location: order_confirmation.php?order_id=' . $order_id . '&transaction_id=' . $transaction_id . '&payment_method=bank_transfer');
+    // Redirect to bank transfer receipt page
+    header('Location: bank_transfer_receipt.php?order_id=' . $order_id . '&transaction_id=' . $transaction_id . '&email=' . urlencode($user_email));
     exit();
 }
 ?>
@@ -164,13 +164,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
                         </div>
 
                         <!-- Payment Confirmation -->
-                        <form method="POST" action="bank_transfer_payment.php?order_id=<?php echo $order_id; ?>" id="paymentForm">
+                        <form method="POST" action="bank_transfer_payment.php?order_id=<?php echo $order_id; ?>" id="paymentForm" novalidate>
                             <div class="mb-4">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="confirmPayment" name="payment_sent" required>
                                     <label class="form-check-label" for="confirmPayment">
                                         I have transferred ₱<?php echo number_format($order['total_amount'], 2); ?> to BDO Unibank account 1234-5678-9012 with reference <?php echo htmlspecialchars($order['order_number']); ?>
                                     </label>
+                                    <div class="invalid-feedback">You must confirm that you have sent the payment.</div>
                                 </div>
                             </div>
 
@@ -228,9 +229,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
                     
                     // Check if checkbox is checked
                     if (!checkbox || !checkbox.checked) {
+                        checkbox.classList.add('is-invalid');
                         ToastNotification.warning('Please confirm that you have completed the bank transfer before proceeding.');
                         return;
                     }
+                    
+                    // Remove invalid state if checked
+                    checkbox.classList.remove('is-invalid');
                     
                     ConfirmModal.show(
                         '🏦 Confirm Bank Transfer Payment',

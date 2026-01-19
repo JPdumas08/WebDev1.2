@@ -34,8 +34,8 @@ try {
     $products_sql = "SELECT COUNT(*) as total FROM products";
     $total_products = (int)$pdo->query($products_sql)->fetch(PDO::FETCH_ASSOC)['total'];
 
-    // Low stock products
-    $low_stock_sql = "SELECT COUNT(*) as total FROM products WHERE product_stock < 10";
+    // Low stock products (exclude archived)
+    $low_stock_sql = "SELECT COUNT(*) as total FROM products WHERE product_stock < 10 AND is_archived = 0";
     $low_stock_products = (int)$pdo->query($low_stock_sql)->fetch(PDO::FETCH_ASSOC)['total'];
 
     // Total customers

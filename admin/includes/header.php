@@ -27,9 +27,66 @@
             </div>
             <div class="header-right">
                 <div class="header-actions">
-                    <button class="header-icon-btn" title="Notifications" onclick="toggleNotifications()">
-                        <i class="fas fa-bell"></i>
-                    </button>
+                    <?php
+                    // Get unread admin notification count
+                    $admin_notif_sql = "SELECT COUNT(*) FROM admin_notifications WHERE is_read = 0";
+                    $admin_notif_count = (int)$pdo->query($admin_notif_sql)->fetchColumn();
+                    ?>
+                    <div class="dropdown">
+                        <button class="header-icon-btn position-relative" title="Notifications" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            <?php if ($admin_notif_count > 0): ?>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                    <?php echo $admin_notif_count > 99 ? '99+' : $admin_notif_count; ?>
+                                </span>
+                            <?php endif; ?>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end shadow" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                            <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Notifications</h6>
+                                <?php if ($admin_notif_count > 0): ?>
+                                    <a href="#" onclick="markAllAdminNotifsRead(); return false;" class="btn btn-sm btn-link">Mark all read</a>
+                                <?php endif; ?>
+                            </div>
+                            <?php
+                            // Fetch recent notifications
+                            $recent_notifs_sql = "SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 10";
+                            $recent_notifs = $pdo->query($recent_notifs_sql)->fetchAll(PDO::FETCH_ASSOC);
+                            
+                            if (!empty($recent_notifs)):
+                                foreach ($recent_notifs as $notif):
+                                    $icon = [
+                                        'new_message' => 'fa-envelope',
+                                        'new_order' => 'fa-shopping-cart',
+                                        'low_stock' => 'fa-exclamation-triangle',
+                                        'system' => 'fa-cog'
+                                    ][$notif['type']] ?? 'fa-bell';
+                            ?>
+                                <a href="#" class="dropdown-item <?php echo $notif['is_read'] ? '' : 'bg-light'; ?>" style="white-space: normal;">
+                                    <div class="d-flex align-items-start">
+                                        <i class="fas <?php echo $icon; ?> mt-1 me-2"></i>
+                                        <div class="flex-grow-1">
+                                            <strong class="d-block"><?php echo htmlspecialchars($notif['title']); ?></strong>
+                                            <small class="text-muted"><?php echo htmlspecialchars($notif['message']); ?></small>
+                                            <br><small class="text-muted"><?php echo date('M j, g:i A', strtotime($notif['created_at'])); ?></small>
+                                        </div>
+                                    </div>
+                                </a>
+                            <?php
+                                endforeach;
+                            else:
+                            ?>
+                                <div class="px-3 py-4 text-center text-muted">
+                                    <i class="fas fa-bell-slash mb-2" style="font-size: 2rem;"></i>
+                                    <p class="mb-0">No notifications</p>
+                                </div>
+                            <?php endif; ?>
+                            <div class="px-3 py-2 border-top text-center">
+                                <a href="admin_notifications.php" class="btn btn-sm btn-primary">View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button class="header-icon-btn" id="sidebarToggle" title="Toggle Sidebar" onclick="toggleSidebar()" style="display: none;">
                         <i class="fas fa-bars"></i>
                     </button>

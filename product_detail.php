@@ -9,7 +9,7 @@ $product = null;
 
 if ($productId > 0) {
     try {
-        $stmt = $pdo->prepare('SELECT product_id, product_name, product_price, product_image, category, product_description FROM products WHERE product_id = :pid LIMIT 1');
+        $stmt = $pdo->prepare('SELECT product_id, product_name, product_price, product_image, category, product_description, product_stock, is_archived FROM products WHERE product_id = :pid AND is_archived = 0 LIMIT 1');
         $stmt->execute([':pid' => $productId]);
         $product = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
@@ -45,6 +45,10 @@ $name = htmlspecialchars($product['product_name'], ENT_QUOTES, 'UTF-8');
 $price = number_format((float) $product['product_price'], 2);
 $category = htmlspecialchars($product['category'] ?? 'Jewelry', ENT_QUOTES, 'UTF-8');
 $description = !empty($product['product_description']) ? htmlspecialchars($product['product_description'], ENT_QUOTES, 'UTF-8') : 'Designed for every occasion, this piece pairs timeless elegance with modern craftsmanship. Perfect as a gift or a personal staple.';
+$stock = isset($product['product_stock']) ? (int)$product['product_stock'] : 0;
+$stockStatus = $stock > 10 ? 'In Stock' : ($stock > 0 ? 'Low Stock' : 'Out of Stock');
+$stockClass = $stock > 10 ? 'bg-success' : ($stock > 0 ? 'bg-warning' : 'bg-danger');
+$stockIcon = $stock > 10 ? 'fa-check-circle' : ($stock > 0 ? 'fa-exclamation-circle' : 'fa-times-circle');
 ?>
 
 <main class="product-detail-page">
@@ -70,7 +74,18 @@ $description = !empty($product['product_description']) ? htmlspecialchars($produ
             <div class="card-body">
               <div class="d-flex align-items-center mb-3">
                 <span class="badge bg-light text-dark border me-2"><i class="fas fa-tag me-1"></i><?php echo $category; ?></span>
-                <span class="badge bg-success-soft text-success"><i class="fas fa-check-circle me-1"></i>In Stock</span>
+                <span class="badge <?php echo $stockClass; ?> text-white">
+                  <i class="fas <?php echo $stockIcon; ?> me-1"></i><?php echo $stockStatus; ?>
+                </span>
+                <?php if ($stock > 0 && $stock <= 10): ?>
+                  <span class="badge bg-light text-dark border ms-2">
+                    <i class="fas fa-box me-1"></i>Only <?php echo $stock; ?> left
+                  </span>
+                <?php elseif ($stock > 10): ?>
+                  <span class="badge bg-light text-dark border ms-2">
+                    <i class="fas fa-box me-1"></i><?php echo $stock; ?> available
+                  </span>
+                <?php endif; ?>
               </div>
               <h1 class="h3 fw-bold mb-2"><?php echo $name; ?></h1>
               <div class="d-flex align-items-center mb-3">
@@ -99,14 +114,14 @@ $description = !empty($product['product_description']) ? htmlspecialchars($produ
               <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
                 <div class="pd-quantity d-flex align-items-center">
                   <label class="me-2 mb-0 text-muted" for="pdQuantity">Qty</label>
-                  <input type="number" id="pdQuantity" class="form-control" value="1" min="1" max="99" style="width: 90px;">
+                  <input type="number" id="pdQuantity" class="form-control" value="1" min="1" max="<?php echo max(1, $stock); ?>" style="width: 90px;" <?php echo $stock <= 0 ? 'disabled' : ''; ?>>
                 </div>
                 <div class="flex-grow-1 d-flex gap-2">
-                  <button id="pdAddToCart" class="btn btn-primary flex-fill">
-                    <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                  <button id="pdAddToCart" class="btn btn-primary flex-fill" <?php echo $stock <= 0 ? 'disabled' : ''; ?>>
+                    <i class="fas fa-shopping-cart me-2"></i><?php echo $stock <= 0 ? 'Out of Stock' : 'Add to Cart'; ?>
                   </button>
-                  <button id="pdBuyNow" class="btn btn-dark flex-fill">
-                    <i class="fas fa-bolt me-2"></i>Buy Now
+                  <button id="pdBuyNow" class="btn btn-dark flex-fill" <?php echo $stock <= 0 ? 'disabled' : ''; ?>>
+                    <i class="fas fa-bolt me-2"></i><?php echo $stock <= 0 ? 'Unavailable' : 'Buy Now'; ?>
                   </button>
                 </div>
               </div>

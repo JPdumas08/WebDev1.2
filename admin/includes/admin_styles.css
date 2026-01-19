@@ -76,12 +76,61 @@
     align-items: center;
     padding: 0 2.5rem;
     box-shadow: var(--shadow-sm);
-    z-index: 50;
+    z-index: 1000;
+    position: relative;
+    overflow: visible;
 }
 
 .header-left {
     display: flex;
     align-items: center;
+    z-index: 1001;
+    position: relative;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 1001;
+    position: relative;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 1002;
+    position: relative;
+}
+
+.header-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--admin-border);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1003;
+    pointer-events: auto !important;
+}
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1001;
+    pointer-events: auto !important;
 }
 
 .admin-logo {
@@ -116,17 +165,6 @@
     gap: 1.5rem;
 }
 
-.header-icon-btn {
-    background: none;
-    border: none;
-    color: var(--admin-text-muted);
-    cursor: pointer;
-    font-size: 1.2rem;
-    transition: all 0.3s ease;
-    padding: 0.5rem;
-    border-radius: 8px;
-}
-
 .header-icon-btn:hover {
     color: var(--accent-gold);
     background: rgba(255, 215, 0, 0.08);
@@ -139,6 +177,8 @@
     gap: 1rem;
     position: relative;
     cursor: pointer;
+    z-index: 1001;
+    pointer-events: auto !important;
 }
 
 .user-avatar {
@@ -184,7 +224,7 @@
     pointer-events: none;
     transform: translateY(-10px) scale(0.95);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 1000;
+    z-index: 2000;
     box-shadow: var(--shadow-lg);
 }
 
@@ -193,6 +233,70 @@
     visibility: visible;
     pointer-events: auto;
     transform: translateY(0) scale(1);
+}
+
+/* Bootstrap dropdown overrides */
+.dropdown-menu {
+    z-index: 2000 !important;
+    pointer-events: auto !important;
+    background-color: #ffffff !important;
+    border: 1px solid var(--admin-border) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+    min-width: 320px;
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 0 !important;
+    margin: 0 !important;
+}
+
+.dropdown-menu.show {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+}
+
+.dropdown-menu:not(.show) {
+    display: none !important;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+.dropdown-toggle {
+    z-index: 1003 !important;
+    pointer-events: auto !important;
+}
+
+.dropdown {
+    position: relative;
+    z-index: 1500;
+    display: flex;
+}
+
+.dropdown-item {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    color: var(--admin-text) !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:active {
+    background-color: #f0f0f0 !important;
+    color: var(--admin-text) !important;
+}
+
+.dropdown-divider {
+    border-top: 1px solid var(--admin-border) !important;
+}
+
+.dropdown-header {
+    padding: 0.75rem 1rem !important;
+    color: var(--admin-text-muted) !important;
+    font-weight: 600;
+    font-size: 0.85rem;
 }
 
 .user-menu-header {
@@ -537,6 +641,12 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
+    table-layout: auto;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .data-table thead {
@@ -561,8 +671,23 @@
     font-size: 0.95rem;
 }
 
+.data-table td .btn {
+    position: relative;
+    z-index: 999 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
 .data-table tbody tr {
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure buttons are always clickable */
+.btn {
+    pointer-events: auto !important;
+    cursor: pointer !important;
 }
 
 .data-table tbody tr:hover {

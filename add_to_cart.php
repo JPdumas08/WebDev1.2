@@ -66,17 +66,31 @@ try {
     }
 
     // Fetch product and available stock. Use actual columns from schema.
-    $pstmt = $pdo->prepare('SELECT product_id, product_name AS name, product_price AS price, NULL AS stock FROM products WHERE product_id = :pid LIMIT 1');
+    $pstmt = $pdo->prepare('SELECT product_id, product_name AS name, product_price AS price, product_stock AS stock, is_archived FROM products WHERE product_id = :pid AND is_archived = 0 LIMIT 1');
     $pstmt->execute([':pid' => $product_id]);
     $product = $pstmt->fetch();
     if (!$product) {
         $pdo->rollBack();
-        echo json_encode(['success' => false, 'error' => 'product_not_found']);
+        echo json_encode(['success' => false, 'error' => 'product_not_available', 'message' => 'This product is no longer available']);
+        exit;
+    }
+    
+    // Check if product is archived
+    if (isset($product['is_archived']) && $product['is_archived'] == 1) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'error' => 'product_archived', 'message' => 'This product is no longer available']);
         exit;
     }
 
     // If there's no stock column, treat available as effectively unlimited
     $available = isset($product['stock']) && $product['stock'] !== null ? (int)$product['stock'] : PHP_INT_MAX;
+    
+    // Check if product is out of stock
+    if ($available <= 0) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'error' => 'out_of_stock', 'message' => 'This product is currently out of stock']);
+        exit;
+    }
 
     // Check existing item (use cart_items table and cart_item_id PK)
     $cstmt = $pdo->prepare('SELECT cart_item_id AS item_id, quantity FROM cart_items WHERE cart_id = :cart_id AND product_id = :product_id LIMIT 1');

@@ -131,158 +131,124 @@ require_once __DIR__ . '/includes/header.php';
             <i class="fas fa-paper-plane me-2"></i>Send us a Message
           </h3>
           
-          <form id="contactForm" novalidate>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="contactFirstName" class="form-label">First Name</label>
-                <input type="text" id="contactFirstName" class="form-control" required>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="contactLastName" class="form-label">Last Name</label>
-                <input type="text" id="contactLastName" class="form-control" required>
-              </div>
+          <?php if (isset($_GET['success']) && $_GET['success'] === 'sent'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              <i class="fas fa-check-circle me-2"></i>
+              <strong>Message sent successfully!</strong> We'll get back to you within 24 hours.
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <?php endif; ?>
+          
+          <?php if (isset($_GET['error'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <i class="fas fa-exclamation-circle me-2"></i>
+              <strong>Error:</strong> <?php echo htmlspecialchars($_GET['error']); ?>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <?php endif; ?>
+          
+          <form action="process_contact.php" method="POST" id="contactForm" novalidate>
+            <div class="mb-3">
+              <label for="name" class="form-label">Full Name *</label>
+              <input type="text" id="name" name="name" class="form-control" 
+                     value="<?php echo (isset($user['firstname']) && isset($user['lastname'])) ? htmlspecialchars($user['firstname'] . ' ' . $user['lastname']) : ''; ?>" 
+                     required minlength="2">
+              <div class="invalid-feedback">Please enter your full name (at least 2 characters).</div>
             </div>
 
             <div class="mb-3">
-              <label for="contactEmail" class="form-label">Email</label>
-              <input type="email" id="contactEmail" class="form-control" required>
+              <label for="email" class="form-label">Email *</label>
+              <input type="email" id="email" name="email" class="form-control" 
+                     value="<?php echo isset($user['email']) ? htmlspecialchars($user['email']) : ''; ?>" 
+                     required>
+              <div class="invalid-feedback">Please enter a valid email address.</div>
             </div>
 
             <div class="mb-3">
-              <label for="contactSubject" class="form-label">Subject</label>
-              <select id="contactSubject" class="form-select" required>
+              <label for="subject" class="form-label">Subject *</label>
+              <select id="subject" name="subject" class="form-select" required>
                 <option value="">Choose...</option>
-                <option value="general">General Inquiry</option>
-                <option value="order">Order Issue</option>
-                <option value="returns">Returns</option>
-                <option value="other">Other</option>
+                <option value="Order Inquiry">Order Inquiry</option>
+                <option value="Product Question">Product Question</option>
+                <option value="Payment Issue">Payment Issue</option>
+                <option value="Shipping/Delivery">Shipping/Delivery</option>
+                <option value="Return/Refund">Return/Refund</option>
+                <option value="Technical Support">Technical Support</option>
+                <option value="Feedback">Feedback</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
             <div class="mb-3">
-              <label for="contactMessage" class="form-label">Message</label>
-              <textarea id="contactMessage" class="form-control" rows="6" required></textarea>
-            </div>
-
-            <div class="mb-3 form-check">
-              <input type="checkbox" id="agreeContact" class="form-check-input" required>
-              <label for="agreeContact" class="form-check-label">I agree to the privacy policy</label>
+              <label for="message" class="form-label">Message *</label>
+              <textarea id="message" name="message" class="form-control" rows="6" required minlength="10" 
+                        placeholder="Please describe your inquiry in detail..."></textarea>
+              <small class="text-muted">Minimum 10 characters</small>
             </div>
 
             <div class="text-center">
-              <button type="submit" class="btn btn-primary">Send Message</button>
+              <button type="submit" class="btn btn-primary btn-lg px-5">
+                <i class="fas fa-paper-plane me-2"></i>Send Message
+              </button>
             </div>
           </form>
-
-          <script>
-          $(document).ready(function() {
-            // Contact Form Validation and Submission
-            $('#contactForm').on('submit', function(e) {
-              e.preventDefault();
-
-              // Mark form as submitted for validation tracking
-              $(this).data('submitted', true);
-
-              let isValid = true;
-              const firstName = $('#contactFirstName').val().trim();
-              const lastName = $('#contactLastName').val().trim();
-              const email = $('#contactEmail').val().trim();
-              const subject = $('#contactSubject').val();
-              const message = $('#contactMessage').val().trim();
-
-              // Clear previous validation
-              $('.is-invalid').removeClass('is-invalid');
-              $('.invalid-feedback').remove();
-
-              // Validate First Name
-              if (!firstName) {
-                $('#contactFirstName').addClass('is-invalid');
-                $('#contactFirstName').after('<div class="invalid-feedback">This field is required</div>');
-                isValid = false;
-              }
-
-              // Validate Last Name
-              if (!lastName) {
-                $('#contactLastName').addClass('is-invalid');
-                $('#contactLastName').after('<div class="invalid-feedback">This field is required</div>');
-                isValid = false;
-              }
-
-              // Validate Email
-              if (!email) {
-                $('#contactEmail').addClass('is-invalid');
-                $('#contactEmail').after('<div class="invalid-feedback">This field is required</div>');
-                isValid = false;
-              } else {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                  $('#contactEmail').addClass('is-invalid');
-                  $('#contactEmail').after('<div class="invalid-feedback">Please enter a valid email address</div>');
-                  isValid = false;
-                }
-              }
-
-              // Validate Subject
-              if (!subject) {
-                $('#contactSubject').addClass('is-invalid');
-                $('#contactSubject').after('<div class="invalid-feedback">Please select a subject</div>');
-                isValid = false;
-              }
-
-              // Validate Message
-              if (!message) {
-                $('#contactMessage').addClass('is-invalid');
-                $('#contactMessage').after('<div class="invalid-feedback">This field is required</div>');
-                isValid = false;
-              } else if (message.length < 10) {
-                $('#contactMessage').addClass('is-invalid');
-                $('#contactMessage').after('<div class="invalid-feedback">Message must be at least 10 characters long</div>');
-                isValid = false;
-              }
-
-              // Validate Privacy Policy Agreement
-              if (!$('#agreeContact').is(':checked')) {
-                $('#agreeContact').addClass('is-invalid');
-                if (!$('#agreeContact').siblings('.invalid-feedback').length) {
-                  $('#agreeContact').after('<div class="invalid-feedback">You must agree to the privacy policy</div>');
-                }
-                isValid = false;
-              } else {
-                $('#agreeContact').removeClass('is-invalid');
-                $('#agreeContact').siblings('.invalid-feedback').remove();
-              }
-
-              if (isValid) {
-                // Simulate sending message
-                $('#contactForm button[type="submit"]').text('Sending...').prop('disabled', true);
-
-                setTimeout(() => {
-                  ToastNotification.success('Message sent successfully! We will get back to you within 24 hours.');
-                  $('#contactForm')[0].reset();
-                  $('#contactForm button[type="submit"]').text('Send Message').prop('disabled', false);
-                  $('.is-invalid').removeClass('is-invalid');
-                  $('.invalid-feedback').remove();
-                  // Reset form submission tracking
-                  $('#contactForm').removeData('submitted');
-                }, 1200);
-              }
-            });
-
-            // Auto-trim spaces on input
-            $('input[type="text"], input[type="email"], textarea').on('blur', function() {
-              $(this).val($(this).val().trim());
-            });
-
-            // Disable browser validation messages
-            $('input[required]').on('invalid', function(e) {
-              e.preventDefault();
-            });
-          });
-          </script>
 
         </div>
       </div>
     </div>
   </section>
+
+<script>
+// Custom form validation for contact form
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    let isValid = true;
+    const form = this;
+    
+    // Clear previous validation states
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    // Validate name
+    const nameInput = document.getElementById('name');
+    if (nameInput.value.trim().length < 2) {
+        nameInput.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate email
+    const emailInput = document.getElementById('email');
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(emailInput.value.trim())) {
+        emailInput.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate subject
+    const subjectInput = document.getElementById('subject');
+    if (!subjectInput.value) {
+        subjectInput.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate message
+    const messageInput = document.getElementById('message');
+    if (messageInput.value.trim().length < 10) {
+        messageInput.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    if (isValid) {
+        form.submit();
+    } else {
+        // Scroll to first error
+        const firstError = form.querySelector('.is-invalid');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstError.focus();
+        }
+    }
+});
+</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

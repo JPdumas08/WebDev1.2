@@ -35,7 +35,7 @@ include 'includes/header.php';
             </p>
         </div>
 
-        <a href="../logout.php" class="btn btn-danger">Logout</a>
+        <a href="logout.php" class="btn btn-danger">Logout</a>
     </div>
 
     <!-- System Info -->

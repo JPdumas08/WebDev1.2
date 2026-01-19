@@ -104,10 +104,11 @@ include 'includes/header.php';
 <?php endif; ?>
 
 <div class="admin-card" style="max-width: 600px;">
-    <form method="POST">
+    <form method="POST" novalidate>
         <div class="form-group">
             <label class="form-label">Product Name *</label>
             <input type="text" name="name" class="form-control" value="<?php echo htmlspecialchars($product['product_name'] ?? ''); ?>" required>
+            <div class="invalid-feedback">Product name is required.</div>
         </div>
 
         <div class="form-group">
@@ -119,11 +120,13 @@ include 'includes/header.php';
             <div class="form-group">
                 <label class="form-label">Price (₱) *</label>
                 <input type="number" name="price" class="form-control" step="0.01" value="<?php echo $product['product_price'] ?? ''; ?>" required>
+                <div class="invalid-feedback">Price is required.</div>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Stock *</label>
                 <input type="number" name="stock" class="form-control" value="<?php echo $product['product_stock'] ?? ''; ?>" required>
+                <div class="invalid-feedback">Stock is required.</div>
             </div>
         </div>
 
@@ -138,5 +141,53 @@ include 'includes/header.php';
         </div>
     </form>
 </div>
+
+<script>
+// Custom validation for product edit form
+document.querySelector('form').addEventListener('submit', function(e) {
+    let isValid = true;
+    const form = this;
+    
+    // Clear previous validation
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    // Validate product name
+    const name = form.querySelector('[name="name"]');
+    if (!name.value.trim()) {
+        name.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate price
+    const price = form.querySelector('[name="price"]');
+    if (!price.value || parseFloat(price.value) <= 0) {
+        price.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate stock
+    const stock = form.querySelector('[name="stock"]');
+    if (!stock.value || parseInt(stock.value) < 0) {
+        stock.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    // Validate image
+    const image = form.querySelector('[name="image"]');
+    if (!image.value.trim()) {
+        image.classList.add('is-invalid');
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        e.preventDefault();
+        const firstError = form.querySelector('.is-invalid');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstError.focus();
+        }
+    }
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>

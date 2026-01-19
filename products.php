@@ -56,7 +56,7 @@ require_once __DIR__ . '/includes/header.php';
   // Load products once for all tabs
   require_once 'db.php';
   try {
-    $pstmt = $pdo->query('SELECT product_id, product_name, product_price, product_image, category FROM products ORDER BY product_id DESC');
+    $pstmt = $pdo->query('SELECT product_id, product_name, product_price, product_image, category, product_stock FROM products WHERE is_archived = 0 ORDER BY product_id DESC');
     $prods = $pstmt->fetchAll(PDO::FETCH_ASSOC);
   } catch (Exception $e) {
     $prods = [];
@@ -210,6 +210,10 @@ function updateProductDisplay(products) {
       const name = p.product_name;
       const price = '₱' + parseFloat(p.product_price).toFixed(2);
       const originalPrice = '₱' + (parseFloat(p.product_price) * 1.2).toFixed(2);
+      const stock = parseInt(p.product_stock) || 0;
+      const stockStatus = stock > 10 ? 'In Stock' : stock > 0 ? 'Low Stock' : 'Out of Stock';
+      const stockClass = stock > 10 ? 'text-success' : stock > 0 ? 'text-warning' : 'text-danger';
+      const stockIcon = stock > 10 ? 'fa-check-circle' : stock > 0 ? 'fa-exclamation-circle' : 'fa-times-circle';
 
       if (currentView === 'grid') {
         html += `
@@ -263,6 +267,12 @@ function updateProductDisplay(products) {
                   <small class="text-muted ms-1">(4.5)</small>
                 </div>
                 
+                <div class="product-stock mb-2">
+                  <small class="${stockClass}">
+                    <i class="fas ${stockIcon} me-1"></i>${stockStatus} ${stock > 0 ? '(' + stock + ' available)' : ''}
+                  </small>
+                </div>
+                
                 <div class="product-price d-flex align-items-center justify-content-between mb-3">
                   <div>
                     <span class="current-price h5 text-primary fw-bold mb-0">${price}</span>
@@ -272,7 +282,8 @@ function updateProductDisplay(products) {
                     <span class="badge bg-success">Save 20%</span>
                   </div>
                 </div>
-                
+                        ${stock <= 0 ? 'disabled' : ''}>
+                  <i class="fas fa-shopping-cart me-2"></i>${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                 <button class="btn btn-primary w-100 rounded-pill add-to-cart" 
                         data-id="${p.product_id}" 
                         data-name="${name}" 
@@ -305,6 +316,11 @@ function updateProductDisplay(products) {
                       <i class="fas fa-star-half-alt"></i>
                       <small class="text-muted ms-2">(4.5)</small>
                     </div>
+                    <div class="mt-2">
+                      <small class="${stockClass}">
+                        <i class="fas ${stockIcon} me-1"></i>${stockStatus} ${stock > 0 ? '(' + stock + ' available)' : ''}
+                      </small>
+                    </div>
                   </div>
                   <div class="col-md-2 text-center">
                     <h5 class="text-primary">${price}</h5>
@@ -318,6 +334,13 @@ function updateProductDisplay(products) {
                       <i class="fas fa-eye"></i> View
                     </button>
                     <button class="btn btn-sm btn-primary add-to-cart" 
+                            data-id="${p.product_id}" 
+                            data-name="${name}" 
+                            data-price="${p.product_price}" 
+                            data-image="${img}"
+                            ${stock <= 0 ? 'disabled' : ''}>
+                      <i class="fas fa-shopping-cart"></i> ${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
                             data-id="${p.product_id}" 
                             data-name="${name}" 
                             data-price="${p.product_price}" 

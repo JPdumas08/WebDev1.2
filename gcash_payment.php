@@ -144,10 +144,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
                         </div>
 
                         <!-- Payment Confirmation -->
-                        <form method="POST" action="gcash_payment.php?order_id=<?php echo $order_id; ?>" id="paymentForm">
+                        <form method="POST" action="gcash_payment.php?order_id=<?php echo $order_id; ?>" id="paymentForm" novalidate>
                             <div class="mb-4">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="confirmPayment" name="payment_sent" required>
+                                    <div class="invalid-feedback">You must confirm that you have sent the payment.</div>
                                     <label class="form-check-label" for="confirmPayment">
                                         I have sent ₱<?php echo number_format($order['total_amount'], 2); ?> via GCash to the number above with reference <?php echo htmlspecialchars($order['order_number']); ?>
                                     </label>
@@ -207,9 +208,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_payment'])) {
                     
                     // Check if checkbox is checked
                     if (!checkbox || !checkbox.checked) {
+                        checkbox.classList.add('is-invalid');
                         ToastNotification.warning('Please confirm that you have sent the GCash payment before proceeding.');
                         return;
                     }
+                    
+                    // Remove invalid state if checked
+                    checkbox.classList.remove('is-invalid');
                     
                     ConfirmModal.show(
                         '💳 Confirm GCash Payment',

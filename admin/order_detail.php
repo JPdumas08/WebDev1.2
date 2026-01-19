@@ -15,13 +15,65 @@ $error_message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'update_status' && isset($_POST['order_id'], $_POST['status'])) {
         try {
-            $update_sql = "UPDATE orders SET order_status = :status, updated_at = NOW() WHERE order_id = :oid";
-            $update_stmt = $pdo->prepare($update_sql);
-            $update_stmt->execute([
-                ':status' => $_POST['status'],
-                ':oid' => (int)$_POST['order_id']
-            ]);
-            $success_message = "Order status updated successfully!";
+            $order_id_update = (int)$_POST['order_id'];
+            $new_status = $_POST['status'];
+            
+            // Get order details including user_id and old status
+            $order_check_sql = "SELECT user_id, order_status FROM orders WHERE order_id = :oid";
+            $order_check_stmt = $pdo->prepare($order_check_sql);
+            $order_check_stmt->execute([':oid' => $order_id_update]);
+            $order_info = $order_check_stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($order_info) {
+                $old_status = $order_info['order_status'];
+                
+                // Update order status
+                $update_sql = "UPDATE orders SET order_status = :status, updated_at = NOW() WHERE order_id = :oid";
+                $update_stmt = $pdo->prepare($update_sql);
+                $update_stmt->execute([
+                    ':status' => $new_status,
+                    ':oid' => $order_id_update
+                ]);
+                
+                // Create notification for customer if status changed
+                if ($old_status !== $new_status && $order_info['user_id']) {
+                    $status_messages = [
+                        'pending' => 'Your order #' . $order_id_update . ' is now pending.',
+                        'processing' => 'Your order #' . $order_id_update . ' is being processed.',
+                        'shipped' => 'Great news! Your order #' . $order_id_update . ' has been shipped!',
+                        'delivered' => 'Your order #' . $order_id_update . ' has been delivered.',
+                        'cancelled' => 'Your order #' . $order_id_update . ' has been cancelled.'
+                    ];
+                    
+                    // Check if related_id column exists
+                    $columns = $pdo->query("SHOW COLUMNS FROM notifications LIKE 'related_id'")->fetch();
+                    
+                    if ($columns) {
+                        // New schema with related_id
+                        $notif_sql = "INSERT INTO notifications (user_id, type, title, message, related_id, is_read, created_at) 
+                                      VALUES (:user_id, 'order_status', :title, :message, :related_id, 0, NOW())";
+                        $notif_stmt = $pdo->prepare($notif_sql);
+                        $notif_stmt->execute([
+                            ':user_id' => $order_info['user_id'],
+                            ':title' => 'Order Status Updated',
+                            ':message' => $status_messages[$new_status] ?? 'Your order status has been updated.',
+                            ':related_id' => $order_id_update
+                        ]);
+                    } else {
+                        // Old schema without related_id
+                        $notif_sql = "INSERT INTO notifications (user_id, type, title, message, is_read, created_at) 
+                                      VALUES (:user_id, 'order_status', :title, :message, 0, NOW())";
+                        $notif_stmt = $pdo->prepare($notif_sql);
+                        $notif_stmt->execute([
+                            ':user_id' => $order_info['user_id'],
+                            ':title' => 'Order Status Updated',
+                            ':message' => $status_messages[$new_status] ?? 'Your order status has been updated.'
+                        ]);
+                    }
+                }
+                
+                $success_message = "Order status updated successfully!";
+            }
         } catch (Exception $e) {
             error_log("Update status error: " . $e->getMessage());
             $error_message = "Failed to update order status. Please try again.";

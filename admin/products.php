@@ -11,6 +11,7 @@ $page_title = 'Products';
 // Search
 $search = $_GET['search'] ?? '';
 $category = $_GET['category'] ?? '';
+$status_filter = $_GET['status'] ?? 'active'; // active, archived, all
 $sort = $_GET['sort'] ?? 'newest';
 $page = (int)($_GET['page'] ?? 1);
 $per_page = 15;
@@ -20,6 +21,14 @@ try {
     // Build query with filters
     $where_clauses = [];
     $params = [];
+
+    // Status filter
+    if ($status_filter === 'active') {
+        $where_clauses[] = "is_archived = 0";
+    } elseif ($status_filter === 'archived') {
+        $where_clauses[] = "is_archived = 1";
+    }
+    // 'all' shows both
 
     if ($search) {
         $where_clauses[] = "(product_name LIKE :search OR product_description LIKE :search)";
@@ -57,8 +66,9 @@ try {
     // Fetch products
     $products_sql = "SELECT product_id, product_name, product_price, 
                             COALESCE(product_stock, 0) as product_stock, 
-                            product_image, category, 
-                            COALESCE(created_at, NOW()) as created_at
+                            product_image, category, is_archived,
+                            COALESCE(created_at, NOW()) as created_at,
+                            archived_at
                      FROM products
                      {$where}
                      {$order_by}
@@ -109,6 +119,12 @@ include 'includes/header.php';
             placeholder="Search products by name or description..." 
             value="<?php echo htmlspecialchars($search); ?>">
         
+        <select name="status" class="form-control">
+            <option value="active" <?php echo $status_filter === 'active' ? 'selected' : ''; ?>>Active Products</option>
+            <option value="archived" <?php echo $status_filter === 'archived' ? 'selected' : ''; ?>>Archived Products</option>
+            <option value="all" <?php echo $status_filter === 'all' ? 'selected' : ''; ?>>All Products</option>
+        </select>
+        
         <select name="category" class="form-control">
             <option value="">All Categories</option>
             <?php foreach ($categories as $cat): ?>
@@ -156,17 +172,25 @@ include 'includes/header.php';
                         <th>Stock</th>
                         <th>Status</th>
                         <th>Added</th>
-                        <th>Actions</th>
+                        <th style="min-width: 200px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($products as $product): ?>
-                        <tr>
+                    <?php foreach ($products as $product): 
+                        $is_archived = (int)$product['is_archived'] === 1;
+                        $row_style = $is_archived ? 'opacity: 0.6; background: var(--admin-bg-hover);' : '';
+                    ?>
+                        <tr style="<?php echo $row_style; ?>" data-product-id="<?php echo (int)$product['product_id']; ?>">
                             <td>
                                 <div style="display: flex; gap: 1rem; align-items: center;">
                                     <img src="<?php echo htmlspecialchars(get_admin_image_path($product['product_image'])); ?>" alt="Product" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid var(--admin-border); background: var(--admin-bg-secondary);" onerror="this.src='../image/placeholder.png'">
                                     <div>
                                         <strong><?php echo htmlspecialchars($product['product_name']); ?></strong>
+                                        <?php if ($is_archived): ?>
+                                            <span class="badge-status badge-secondary" style="margin-left: 0.5rem; font-size: 0.7rem;">
+                                                <i class="fas fa-archive"></i> ARCHIVED
+                                            </span>
+                                        <?php endif; ?>
                                         <br><small style="color: var(--admin-text-muted);">ID: <?php echo (int)$product['product_id']; ?></small>
                                     </div>
                                 </div>
@@ -194,7 +218,11 @@ include 'includes/header.php';
                                 ?>
                             </td>
                             <td>
-                                <?php if ($stock > 0): ?>
+                                <?php if ($is_archived): ?>
+                                    <span class="badge-status badge-secondary">
+                                        <i class="fas fa-archive"></i> Archived
+                                    </span>
+                                <?php elseif ($stock > 0): ?>
                                     <span class="badge-status badge-success">In Stock</span>
                                 <?php else: ?>
                                     <span class="badge-status badge-danger">Out of Stock</span>
@@ -202,9 +230,27 @@ include 'includes/header.php';
                             </td>
                             <td><?php echo date('M j, Y', strtotime($product['created_at'])); ?></td>
                             <td>
-                                <a href="product_edit.php?id=<?php echo (int)$product['product_id']; ?>" class="btn btn-secondary btn-sm" title="Edit">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <a href="product_edit.php?id=<?php echo (int)$product['product_id']; ?>" class="btn btn-secondary btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    
+                                    <?php if ($is_archived): ?>
+                                        <button 
+                                            onclick="toggleArchiveProduct(<?php echo (int)$product['product_id']; ?>, 'unarchive')" 
+                                            class="btn btn-success btn-sm" 
+                                            title="Restore this product">
+                                            <i class="fas fa-undo"></i> Restore
+                                        </button>
+                                    <?php else: ?>
+                                        <button 
+                                            onclick="toggleArchiveProduct(<?php echo (int)$product['product_id']; ?>, 'archive')" 
+                                            class="btn btn-warning btn-sm" 
+                                            title="Archive this product">
+                                            <i class="fas fa-archive"></i> Archive
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -257,5 +303,39 @@ include 'includes/header.php';
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+function toggleArchiveProduct(productId, action) {
+    const actionText = action === 'archive' ? 'archive' : 'restore';
+    const title = action === 'archive' ? '⚠️ Archive Product' : '🔄 Restore Product';
+    const confirmMsg = action === 'archive' 
+        ? 'Are you sure you want to archive this product? It will be hidden from customers but can be restored later.'
+        : 'Are you sure you want to restore this product? It will become visible to customers again.';
+    
+    AdminModal.show(title, confirmMsg, function() {
+        const formData = new FormData();
+        formData.append('product_id', productId);
+        formData.append('action', action);
+        
+        fetch('api/archive_product.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                AdminModal.success(data.message);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                AdminModal.error(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            AdminModal.error('An error occurred. Please try again.');
+        });
+    });
+}
+</script>
 
 <?php include 'includes/footer.php'; ?>

@@ -432,3 +432,7 @@
 [2026-01-19 06:25:20] Request: POST /add_to_cart.php POST:{"product_id":"2","quantity":"1"}
 [2026-01-19 06:25:21] Request: POST /add_to_cart.php POST:{"product_id":"1","quantity":"1"}
 [2026-01-19 06:25:22] Request: POST /add_to_cart.php POST:{"product_id":"3","quantity":"1"}
+[2026-01-19 16:24:38] Request: POST /add_to_cart.php POST:{"product_id":"8","quantity":"1"}
+[2026-01-19 16:24:46] Request: POST /add_to_cart.php POST:{"product_id":"7","quantity":"1"}
+[2026-01-19 16:24:47] Request: POST /add_to_cart.php POST:{"product_id":"9","quantity":"1"}
+[2026-01-19 16:38:44] Request: POST /add_to_cart.php POST:{"product_id":"7","quantity":"1"}

@@ -139,6 +139,50 @@ if (count($cart_items) === 0) {
     exit();
 }
 
+// Validate all products before processing (real-time stock check)
+$validation_errors = [];
+foreach ($cart_items as $item) {
+    $product_id = (int)$item['product_id'];
+    $requested_qty = (int)$item['quantity'];
+    
+    // Fetch current product stock and archive status
+    $check_sql = "SELECT product_stock, is_archived, product_name FROM products WHERE product_id = :pid";
+    $check_stmt = $pdo->prepare($check_sql);
+    $check_stmt->execute([':pid' => $product_id]);
+    $product_check = $check_stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$product_check) {
+        $validation_errors[] = "Product " . ($item['product_name'] ?? $product_id) . " no longer exists.";
+        continue;
+    }
+    
+    // Check if archived
+    if (isset($product_check['is_archived']) && $product_check['is_archived'] == 1) {
+        $validation_errors[] = $product_check['product_name'] . " is no longer available.";
+        continue;
+    }
+    
+    // Check stock availability
+    $current_stock = isset($product_check['product_stock']) ? (int)$product_check['product_stock'] : 0;
+    if ($current_stock < $requested_qty) {
+        if ($current_stock == 0) {
+            $validation_errors[] = $product_check['product_name'] . " is out of stock.";
+        } else {
+            $validation_errors[] = $product_check['product_name'] . " only has " . $current_stock . " units available (you requested " . $requested_qty . ").";
+        }
+    }
+}
+
+// If any validation errors, return them
+if (!empty($validation_errors)) {
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Some products are unavailable:',
+        'errors' => $validation_errors
+    ]);
+    exit();
+}
+
 // Calculate order totals
 $subtotal = 0;
 $shipping = 150;
@@ -206,6 +250,20 @@ try {
             ':unit_price' => $item['price'],
             ':total_price' => $item_total
         ]);
+        
+        // Deduct stock from products table
+        $update_stock_sql = "UPDATE products SET product_stock = product_stock - :qty WHERE product_id = :pid AND product_stock >= :qty_check";
+        $update_stock_stmt = $pdo->prepare($update_stock_sql);
+        $stock_updated = $update_stock_stmt->execute([
+            ':qty' => $item['quantity'],
+            ':qty_check' => $item['quantity'],
+            ':pid' => $item['product_id']
+        ]);
+        
+        // Verify stock was actually updated
+        if ($update_stock_stmt->rowCount() === 0) {
+            throw new Exception("Failed to update stock for product ID " . $item['product_id'] . ". Product may be out of stock.");
+        }
     }
 
     // Insert payment record
@@ -277,8 +335,8 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log('Checkout error: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'An error occurred while processing your order. Please try again.']);
+    error_log('Checkout error: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
+    echo json_encode(['success' => false, 'message' => 'An error occurred while processing your order. Please try again.', 'debug' => $e->getMessage()]);
     exit();
 }
 ?>

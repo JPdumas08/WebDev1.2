@@ -71,7 +71,7 @@ if (isset($_GET['buyNow']) && $_GET['buyNow'] == 1 && isset($_GET['productId']))
     error_log('Buy Now Mode Activated - Product ID: ' . $buy_now_product_id . ', Qty: ' . $buy_now_quantity);
     
     // Fetch the product details for Buy Now
-    $prod_sql = "SELECT product_id, product_name, product_image, product_price FROM products WHERE product_id = :pid";
+    $prod_sql = "SELECT product_id, product_name, product_image, product_price, product_stock, is_archived FROM products WHERE product_id = :pid AND is_archived = 0";
     $prod_stmt = $pdo->prepare($prod_sql);
     $prod_stmt->execute([':pid' => $buy_now_product_id]);
     $buy_now_product = $prod_stmt->fetch(PDO::FETCH_ASSOC);
@@ -79,6 +79,24 @@ if (isset($_GET['buyNow']) && $_GET['buyNow'] == 1 && isset($_GET['productId']))
     error_log('Product Fetched: ' . json_encode($buy_now_product));
     
     if ($buy_now_product) {
+        // Validate product is not archived and has stock
+        if (isset($buy_now_product['is_archived']) && $buy_now_product['is_archived'] == 1) {
+            $_SESSION['checkout_error'] = 'This product is no longer available.';
+            header('Location: products.php');
+            exit;
+        }
+        
+        $available_stock = isset($buy_now_product['product_stock']) ? (int)$buy_now_product['product_stock'] : 0;
+        if ($available_stock <= 0) {
+            $_SESSION['checkout_error'] = 'This product is currently out of stock.';
+            header('Location: product_detail.php?id=' . $buy_now_product_id);
+            exit;
+        }
+        
+        if ($buy_now_quantity > $available_stock) {
+            $buy_now_quantity = $available_stock;
+        }
+        
         // Create a temporary cart item for Buy Now (not added to database)
         $buy_now_item = [
             'item_id' => 'buy_now_' . $buy_now_product_id,
@@ -86,11 +104,16 @@ if (isset($_GET['buyNow']) && $_GET['buyNow'] == 1 && isset($_GET['productId']))
             'product_name' => $buy_now_product['product_name'],
             'product_image' => $buy_now_product['product_image'],
             'quantity' => $buy_now_quantity,
-            'price' => $buy_now_product['product_price']
+            'price' => $buy_now_product['product_price'],
+            'stock' => $available_stock
         ];
         // Use only the Buy Now item, not the regular cart
         $all_cart_items = [$buy_now_item];
         error_log('Buy Now Item Created: ' . json_encode($buy_now_item));
+    } else {
+        $_SESSION['checkout_error'] = 'Product not found or unavailable.';
+        header('Location: products.php');
+        exit;
     }
 }
 

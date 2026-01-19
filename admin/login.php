@@ -68,15 +68,17 @@ $redirect = $_GET['redirect'] ?? 'index.php';
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="login_handler.php">
+        <form method="POST" action="login_handler.php" novalidate>
             <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect); ?>">
             <div class="mb-3">
                 <label class="form-label">Username or Email</label>
                 <input type="text" name="username" class="form-control" placeholder="admin or admin@example.com" required autofocus>
+                <div class="invalid-feedback">Username or email is required.</div>
             </div>
             <div class="mb-3">
                 <label class="form-label">Password</label>
                 <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                <div class="invalid-feedback">Password is required.</div>
             </div>
             <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-primary">Sign in</button>
@@ -85,5 +87,36 @@ $redirect = $_GET['redirect'] ?? 'index.php';
 
         <p class="helper mt-3">Admin access is isolated from customer login. Keep this tab open alongside the store to monitor changes in real time.</p>
     </div>
+    
+    <script>
+    // Custom validation for admin login
+    document.querySelector('form').addEventListener('submit', function(e) {
+        let isValid = true;
+        const form = this;
+        
+        // Clear previous validation
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Validate username
+        const username = form.querySelector('[name="username"]');
+        if (!username.value.trim()) {
+            username.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Validate password
+        const password = form.querySelector('[name="password"]');
+        if (!password.value.trim()) {
+            password.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            const firstError = form.querySelector('.is-invalid');
+            if (firstError) firstError.focus();
+        }
+    });
+    </script>
 </body>
 </html>

@@ -214,6 +214,68 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 });
 
+// Custom Modal for Admin
+const AdminModal = {
+    show: function(title, message, onConfirm, onCancel) {
+        // Remove existing modal if any
+        const existingModal = document.getElementById('adminCustomModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal HTML
+        const modalHtml = `
+            <div class="modal fade" id="adminCustomModal" tabindex="-1" style="z-index: 9999;">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                        <div class="modal-header" style="border-bottom: 1px solid #e0e0e0; padding: 1.5rem;">
+                            <h5 class="modal-title" style="font-weight: 600; color: #2c3e50;">${title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" style="padding: 1.5rem; color: #555;">
+                            ${message}
+                        </div>
+                        <div class="modal-footer" style="border-top: 1px solid #e0e0e0; padding: 1rem 1.5rem;">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="adminModalConfirm">OK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Get modal element
+        const modalElement = document.getElementById('adminCustomModal');
+        const modal = new bootstrap.Modal(modalElement);
+
+        // Handle confirm button
+        document.getElementById('adminModalConfirm').addEventListener('click', function() {
+            modal.hide();
+            if (onConfirm) onConfirm();
+        });
+
+        // Handle cancel
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            modalElement.remove();
+            if (onCancel) onCancel();
+        });
+
+        // Show modal
+        modal.show();
+    },
+    
+    success: function(message) {
+        showSuccess(message);
+    },
+    
+    error: function(message) {
+        showError(message);
+    }
+};
+
 // Export functions for global use
 window.AdminHelpers = {
     debounce,
@@ -232,3 +294,5 @@ window.AdminHelpers = {
     initializeTooltips,
     initializePopovers
 };
+
+window.AdminModal = AdminModal;

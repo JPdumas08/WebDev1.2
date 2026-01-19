@@ -28,9 +28,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="products.php" class="nav-link <?php echo $current_page === 'products.php' ? 'active' : ''; ?>">
+                    <a href="products.php" class="nav-link <?php echo $current_page === 'products.php' && (!isset($_GET['status']) || $_GET['status'] !== 'archived') ? 'active' : ''; ?>">
                         <i class="fas fa-gem"></i>
                         <span>Products</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="products.php?status=archived" class="nav-link <?php echo $current_page === 'products.php' && isset($_GET['status']) && $_GET['status'] === 'archived' ? 'active' : ''; ?>">
+                        <i class="fas fa-archive"></i>
+                        <span>Archived Products</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="messages.php" class="nav-link <?php echo $current_page === 'messages.php' || $current_page === 'message_detail.php' ? 'active' : ''; ?>">
+                        <i class="fas fa-envelope"></i>
+                        <span>Messages</span>
                     </a>
                 </li>
                 <li class="nav-item">

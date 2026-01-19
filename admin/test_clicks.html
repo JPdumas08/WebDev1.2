@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Click Test</title>
+    <style>
+      .test-btn {
+        padding: 10px 20px;
+        background: gold;
+        color: black;
+        border: none;
+        cursor: pointer;
+        margin: 20px;
+      }
+      .test-link {
+        padding: 10px 20px;
+        background: blue;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Click Test Page</h1>
+    <p>If these work, the issue is with the admin page structure:</p>
+
+    <button class="test-btn" onclick="alert('Button works!')">Test Button</button>
+    <a href="messages.php" class="test-link">Test Link to Messages</a>
+
+    <script>
+      console.log('Test page loaded');
+      document.querySelector('.test-btn').addEventListener('click', () => {
+        console.log('Button clicked via event listener');
+      });
+    </script>
+  </body>
+</html>

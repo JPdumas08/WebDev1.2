@@ -1,9 +1,9 @@
 <?php
 require_once 'db.php'; 
 
-// Fetch all products from the `products` table
+// Fetch all active (non-archived) products from the `products` table
 try {
-    $stmt = $pdo->query('SELECT product_id, product_name, product_price, product_image, category FROM products ORDER BY product_id ASC');
+    $stmt = $pdo->query('SELECT product_id, product_name, product_price, product_image, category, product_stock FROM products WHERE is_archived = 0 ORDER BY product_id ASC');
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
 

@@ -24,7 +24,7 @@ $user_id = (int)$_SESSION['user_id'];
 try {
     // Check if marking all as read
     if (isset($_POST['mark_all']) && $_POST['mark_all'] === '1') {
-        $sql = "UPDATE notifications SET is_read = 1, read_at = NOW() WHERE user_id = :uid AND is_read = 0";
+        $sql = "UPDATE notifications SET is_read = 1 WHERE user_id = :uid AND is_read = 0";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':uid' => $user_id]);
         
@@ -51,7 +51,7 @@ try {
     }
     
     // Mark as read
-    $update_sql = "UPDATE notifications SET is_read = 1, read_at = NOW() WHERE notification_id = :nid";
+    $update_sql = "UPDATE notifications SET is_read = 1 WHERE notification_id = :nid";
     $update_stmt = $pdo->prepare($update_sql);
     $update_stmt->execute([':nid' => $notification_id]);
     

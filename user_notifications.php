@@ -19,15 +19,15 @@ $page = (int)($_GET['page'] ?? 1);
 $per_page = 20;
 $offset = ($page - 1) * $per_page;
 
+
+$pages = 1;
 try {
     // Count total notifications
     $count_sql = "SELECT COUNT(*) as total FROM notifications WHERE user_id = :uid";
     $count_stmt = $pdo->prepare($count_sql);
     $count_stmt->execute([':uid' => $user_id]);
     $total = (int)$count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    $pages = ceil($total / $per_page);
-    
-    // Fetch notifications
+    $pages = max(1, ceil($total / $per_page));
     $notif_sql = "SELECT * FROM notifications 
                   WHERE user_id = :uid 
                   ORDER BY created_at DESC 
@@ -38,13 +38,11 @@ try {
     $notif_stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $notif_stmt->execute();
     $notifications = $notif_stmt->fetchAll(PDO::FETCH_ASSOC);
-    
     // Get unread count
     $unread_sql = "SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND is_read = 0";
     $unread_stmt = $pdo->prepare($unread_sql);
     $unread_stmt->execute([':uid' => $user_id]);
     $unread_count = (int)$unread_stmt->fetchColumn();
-    
 } catch (Exception $e) {
     error_log("Notifications query error: " . $e->getMessage());
     $notifications = [];
@@ -63,10 +61,41 @@ require_once __DIR__ . '/includes/header.php';
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1><i class="fas fa-bell me-2"></i>Notifications</h1>
                 <?php if ($unread_count > 0): ?>
-                    <button onclick="markAllAsRead()" class="btn btn-primary">
+                    <button type="button" class="btn btn-primary" id="markAllBtn">
                         <i class="fas fa-check-double me-2"></i>Mark All as Read
                     </button>
                 <?php endif; ?>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var btn = document.getElementById('markAllBtn');
+                if (btn) {
+                    btn.addEventListener('click', showMarkAllModal);
+                }
+            });
+
+            function showMarkAllModal() {
+                var modal = new bootstrap.Modal(document.getElementById('markAllModal'));
+                modal.show();
+            }
+            </script>
+            <!-- Mark All as Read Modal -->
+            <div class="modal fade" id="markAllModal" tabindex="-1" aria-labelledby="markAllModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="markAllModalLabel"><i class="fas fa-check-double me-2"></i>Mark All as Read</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            Are you sure you want to mark all notifications as read?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="markAllAsRead(); document.getElementById('markAllModal').querySelector('.btn-close').click();">Yes, Mark All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             </div>
             
             <?php if ($unread_count > 0): ?>
@@ -111,9 +140,10 @@ require_once __DIR__ . '/includes/header.php';
                                         <?php echo date('F j, Y g:i A', strtotime($notif['created_at'])); ?>
                                     </small>
                                     
-                                    <?php if ($notif['related_id'] && in_array($notif['type'], ['order_status', 'order_update'])): ?>
+                                    <?php $relatedId = $notif['related_id'] ?? null; ?>
+                                    <?php if ($relatedId && in_array($notif['type'], ['order_status', 'order_update'])): ?>
                                         <div class="mt-2">
-                                            <a href="order_history.php?view=<?php echo $notif['related_id']; ?>" class="btn btn-sm btn-outline-primary">
+                                            <a href="order_history.php?view=<?php echo $relatedId; ?>" class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-external-link-alt me-1"></i>View Order
                                             </a>
                                         </div>
@@ -179,21 +209,14 @@ async function markAsRead(notifId) {
 }
 
 async function markAllAsRead() {
-    if (!confirm('Mark all notifications as read?')) {
-        return;
-    }
-    
     try {
         const formData = new FormData();
         formData.append('mark_all', '1');
-        
         const response = await fetch('api_mark_notification_read.php', {
             method: 'POST',
             body: formData
         });
-        
         const data = await response.json();
-        
         if (data.success) {
             location.reload();
         } else {

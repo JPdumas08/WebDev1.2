@@ -41,7 +41,7 @@ $pageTitle = 'My Wishlist - Jeweluxe';
 include 'includes/header.php';
 ?>
 <link rel="stylesheet" href="styles.css">
-<body class="order-history-page">
+<body class="order-history-page wishlist-page">
 
     <section class="orders-hero">
         <div class="container-xl">
@@ -54,7 +54,7 @@ include 'includes/header.php';
         </div>
     </section>
 
-    <div class="orders-wrapper py-5">
+    <div class="orders-wrapper py-5 wishlist-wrapper">
         <div class="container-xl">
             <?php if ($success_message): ?>
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -63,8 +63,8 @@ include 'includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <div class="row">
-                <div class="col-lg-9">
+            <div class="row wishlist-layout g-4">
+                <div class="col-lg-8 col-xl-9">
                     <?php if (empty($wishlist_items)): ?>
                         <div class="card shadow-sm border-0 rounded-4">
                             <div class="card-body text-center py-5">
@@ -81,39 +81,32 @@ include 'includes/header.php';
                                     <h5 class="mb-0">Saved Items (<?php echo count($wishlist_items); ?>)</h5>
                                 </div>
 
-                                <div class="row g-3">
+                                <div class="wishlist-items">
                                     <?php foreach ($wishlist_items as $item): ?>
-                                        <div class="col-md-6">
-                                            <div class="card border-0 shadow-sm">
-                                                <div class="row g-0">
-                                                    <div class="col-4">
-                                                        <img src="<?php echo htmlspecialchars($item['product_image']); ?>" 
-                                                             class="img-fluid rounded-start" 
-                                                             alt="<?php echo htmlspecialchars($item['product_name']); ?>"
-                                                             style="height: 150px; object-fit: cover;">
-                                                    </div>
-                                                    <div class="col-8">
-                                                        <div class="card-body">
-                                                            <h6 class="card-title mb-2"><?php echo htmlspecialchars($item['product_name']); ?></h6>
-                                                            <p class="card-text mb-2">
-                                                                <strong class="text-primary">₱<?php echo number_format($item['product_price'], 2); ?></strong>
-                                                            </p>
-                                                            <p class="small text-success mb-2">Available</p>
-                                                            <p class="small text-muted mb-3">Added: <?php echo date('M j, Y', strtotime($item['added_at'])); ?></p>
-                                                            <div class="d-flex gap-2">
-                                                                <button class="btn btn-sm btn-primary add-to-cart-btn" 
-                                                                        data-product-id="<?php echo $item['product_id']; ?>">
-                                                                    Add to Cart
-                                                                </button>
-                                                                <form method="POST" class="d-inline">
-                                                                    <input type="hidden" name="product_id" value="<?php echo $item['product_id']; ?>">
-                                                                    <button type="submit" name="remove_from_wishlist" class="btn btn-sm btn-outline-danger">
-                                                                        Remove
-                                                                    </button>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                        <div class="card wishlist-card border-0 shadow-sm">
+                                            <div class="wishlist-thumb">
+                                                <img src="<?php echo htmlspecialchars($item['product_image']); ?>" 
+                                                     class="img-fluid" 
+                                                     alt="<?php echo htmlspecialchars($item['product_name']); ?>">
+                                            </div>
+                                            <div class="card-body p-3 d-flex flex-column">
+                                                <div>
+                                                    <h6 class="card-title wishlist-title mb-1 text-truncate" title="<?php echo htmlspecialchars($item['product_name']); ?>"><?php echo htmlspecialchars($item['product_name']); ?></h6>
+                                                    <div class="wishlist-price price mb-1">₱<?php echo number_format($item['product_price'], 2); ?></div>
+                                                    <div class="wishlist-status text-success meta mb-1">Available</div>
+                                                    <div class="wishlist-added text-muted meta">Added: <?php echo date('M j, Y', strtotime($item['added_at'])); ?></div>
+                                                </div>
+                                                <div class="wishlist-actions d-flex gap-2 mt-3">
+                                                    <button class="btn btn-sm btn-primary flex-grow-1 add-to-cart-btn" 
+                                                            data-product-id="<?php echo $item['product_id']; ?>">
+                                                        Add to Cart
+                                                    </button>
+                                                    <form method="POST" class="d-inline flex-grow-1">
+                                                        <input type="hidden" name="product_id" value="<?php echo $item['product_id']; ?>">
+                                                        <button type="submit" name="remove_from_wishlist" class="btn btn-sm btn-outline-secondary w-100">
+                                                            Remove
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -124,21 +117,21 @@ include 'includes/header.php';
                     <?php endif; ?>
                 </div>
 
-                <div class="col-lg-3">
+                <div class="col-lg-4 col-xl-3 wishlist-sidebar">
                     <div class="card shadow-sm border-0 rounded-4 mb-3">
-                        <div class="card-body">
-                            <h6 class="mb-3">💡 Wishlist Tips</h6>
+                        <div class="card-body wishlist-tips">
+                            <h6 class="mb-3 d-flex align-items-center gap-2"><span class="tips-icon">💡</span> Wishlist Tips</h6>
                             <ul class="small text-muted mb-0">
-                                <li class="mb-2">Items in your wishlist are saved forever</li>
-                                <li class="mb-2">We'll notify you of price drops</li>
-                                <li class="mb-2">Share your wishlist with friends</li>
+                                <li class="mb-1">Items stay saved for you.</li>
+                                <li class="mb-1">Price drop alerts.</li>
+                                <li class="mb-1">Share with friends.</li>
                             </ul>
                         </div>
                     </div>
 
                     <div class="card shadow-sm border-0 rounded-4">
-                        <div class="card-body text-center">
-                            <h6 class="mb-3">Keep Shopping</h6>
+                        <div class="card-body text-center wishlist-cta">
+                            <h6 class="mb-2">Keep Shopping</h6>
                             <a href="products.php" class="btn btn-outline-primary w-100">Browse Products</a>
                         </div>
                     </div>

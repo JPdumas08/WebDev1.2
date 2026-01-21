@@ -1,8 +1,63 @@
 <?php
-/**
- * Database Diagnostic & Setup Tool
- * Diagnoses connection issues and applies necessary schema migrations
- */
+require_once __DIR__ . '/db.php';
+header('Content-Type: text/html; charset=utf-8');
+
+$tables = [
+        'products' => ['product_stock', 'created_at', 'updated_at'],
+        'users' => ['is_admin', 'created_at', 'updated_at'],
+        'orders' => ['order_notes', 'created_at', 'updated_at'],
+        'product_reviews' => ['product_id', 'user_id', 'rating', 'status', 'is_verified', 'created_at']
+];
+
+function tableExists(PDO $pdo, string $table): bool {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t");
+        $stmt->execute([':t' => $table]);
+        return (bool)$stmt->fetchColumn();
+}
+
+function hasColumn(PDO $pdo, string $table, string $column): bool {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c");
+        $stmt->execute([':t' => $table, ':c' => $column]);
+        return (bool)$stmt->fetchColumn();
+}
+
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Diagnostics</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="mb-4">Database Diagnostics</h1>
+        <div class="list-group">
+            <?php foreach ($tables as $table => $cols): ?>
+                <div class="list-group-item">
+                    <h5 class="mb-3"><?php echo htmlspecialchars($table); ?>
+                        <?php $exists = tableExists($pdo, $table); ?>
+                        <span class="badge bg-<?php echo $exists ? 'success' : 'danger'; ?> ms-2"><?php echo $exists ? 'table exists' : 'table missing'; ?></span>
+                    </h5>
+                    <?php if ($exists): ?>
+                        <div class="row g-2">
+                            <?php foreach ($cols as $col): ?>
+                                <?php $cExists = hasColumn($pdo, $table, $col); ?>
+                                <div class="col-md-3 col-6">
+                                    <span class="badge bg-<?php echo $cExists ? 'success' : 'danger'; ?>">
+                                        <?php echo htmlspecialchars($col); ?>: <?php echo $cExists ? 'present' : 'missing'; ?>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</body>
+</html>
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/config.php';

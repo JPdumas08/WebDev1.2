@@ -106,8 +106,8 @@ $payment_date = date('F d, Y h:i A');
             <div class="col-md-8">
                 <!-- Back Button -->
                 <div class="mb-4 no-print">
-                    <button class="btn btn-outline-secondary" onclick="window.history.back();" type="button">
-                        <i class="fas fa-arrow-left"></i> Back
+                    <button class="btn btn-outline-secondary" onclick="window.location.href='products.php';" type="button">
+                        <i class="fas fa-store"></i> Back to Shop
                     </button>
                 </div>
 
@@ -248,6 +248,9 @@ $payment_date = date('F d, Y h:i A');
                             </button>
                             <a href="order_history.php" class="btn btn-outline-primary btn-lg">
                                 <i class="fas fa-list"></i> View Order History
+                            </a>
+                            <a href="products.php" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-store"></i> Continue Shopping
                             </a>
                             <button type="button" class="btn btn-outline-danger btn-lg" id="cancelOrderBtn">
                                 <i class="fas fa-times-circle"></i> Cancel Order

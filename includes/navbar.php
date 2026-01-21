@@ -66,33 +66,37 @@ $user = current_user();
           </a>
         </li>
         
-        <!-- Notifications (Logged in users only) -->
-        <?php if (!empty($user) && isset($user['user_id'])): 
-            // Get unread notification count
+
+        <!-- User Account -->
+        <?php if (!empty($user)): ?>
+          <!-- Notifications (Logged in users only) -->
+          <?php 
+            // Get unread notification count safely for either user_id or id keys
             try {
-                $user_id = (int)$user['user_id'];
+              $user_id = isset($user['user_id']) ? (int)$user['user_id'] : (isset($user['id']) ? (int)$user['id'] : null);
+              if ($user_id) {
                 $notif_count_sql = "SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND is_read = 0";
                 $notif_count_stmt = $pdo->prepare($notif_count_sql);
                 $notif_count_stmt->execute([':uid' => $user_id]);
                 $unread_notif_count = (int)$notif_count_stmt->fetchColumn();
-            } catch (Exception $e) {
+              } else {
                 $unread_notif_count = 0;
+              }
+            } catch (Exception $e) {
+              $unread_notif_count = 0;
             }
-        ?>
-        <li class="nav-item">
-          <a class="nav-link position-relative" href="user_notifications.php" title="Notifications">
-            <i class="fas fa-bell"></i>
-            <?php if ($unread_notif_count > 0): ?>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                <?php echo $unread_notif_count > 99 ? '99+' : $unread_notif_count; ?>
-              </span>
-            <?php endif; ?>
-          </a>
-        </li>
-        <?php endif; ?>
-        
-        <!-- User Account -->
-        <?php if (!empty($user)): ?>
+          ?>
+                    <li class="nav-item">
+                      <a class="nav-link position-relative" href="user_notifications.php" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <?php if ($unread_notif_count > 0): ?>
+                          <span class="notif-count badge bg-danger">
+                            <?php echo $unread_notif_count > 99 ? '99+' : $unread_notif_count; ?>
+                          </span>
+                        <?php endif; ?>
+                      </a>
+                    </li>
+          
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               <div class="user-avatar me-2">
@@ -110,9 +114,6 @@ $user = current_user();
               </a></li>
               <li><a class="dropdown-item" href="order_history.php">
                 <i class="fas fa-history me-2"></i>Order History
-              </a></li>
-              <li><a class="dropdown-item" href="notifications.php">
-                <i class="fas fa-bell me-2"></i>Notifications
               </a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item text-danger" href="logout.php">

@@ -27,56 +27,64 @@ try {
     echo "✓ Connected to database: {$db_name}\n\n";
 
     echo "Step 2: Running migrations...\n";
-    $migration_file = __DIR__ . '/migrations/003_add_missing_admin_columns.sql';
-    
-    if (!file_exists($migration_file)) {
-        throw new Exception("Migration file not found: {$migration_file}");
-    }
+    $migration_dir = __DIR__ . '/migrations';
+    $migration_files = glob($migration_dir . '/*.sql');
+    sort($migration_files, SORT_NATURAL);
 
-    $sql = file_get_contents($migration_file);
-    $statements = array_filter(
-        array_map('trim', explode(';', $sql)),
-        fn($stmt) => !empty($stmt) && !preg_match('/^--/', trim($stmt))
-    );
+    if (empty($migration_files)) {
+        throw new Exception("No migration files found in {$migration_dir}");
+    }
 
     $success_count = 0;
     $skip_count = 0;
 
-    foreach ($statements as $statement) {
-        try {
-            $pdo->exec($statement);
-            echo "  ✓ " . substr(trim($statement), 0, 60) . "...\n";
-            $success_count++;
-        } catch (PDOException $e) {
-            if (strpos($e->getMessage(), 'already exists') !== false || 
-                strpos($e->getMessage(), 'Duplicate column') !== false) {
-                echo "  ℹ " . substr(trim($statement), 0, 60) . "... (already exists)\n";
-                $skip_count++;
-            } else {
-                throw $e;
+    foreach ($migration_files as $migration_file) {
+        echo "\n→ Running " . basename($migration_file) . "\n";
+
+        $sql = file_get_contents($migration_file);
+        $statements = array_filter(
+            array_map('trim', explode(';', $sql)),
+            fn($stmt) => !empty($stmt) && !preg_match('/^--/', trim($stmt))
+        );
+
+        foreach ($statements as $statement) {
+            try {
+                $pdo->exec($statement);
+                echo "  ✓ " . substr(trim($statement), 0, 60) . "...\n";
+                $success_count++;
+            } catch (PDOException $e) {
+                if (strpos($e->getMessage(), 'already exists') !== false || 
+                    strpos($e->getMessage(), 'Duplicate column') !== false) {
+                    echo "  ℹ " . substr(trim($statement), 0, 60) . "... (already exists)\n";
+                    $skip_count++;
+                } else {
+                    throw $e;
+                }
             }
         }
     }
 
     echo "\n✓ Migration completed! ({$success_count} executed, {$skip_count} skipped)\n\n";
 
-    // Verify schema
+    // Verify schema using information_schema
     echo "Step 3: Verifying schema...\n";
-    
-    $critical_checks = [
-        'products.product_stock' => "SELECT 1 FROM products LIMIT 1 WHERE 1=0",
-        'products.created_at' => "SELECT created_at FROM products LIMIT 1 WHERE 1=0",
-        'users.is_admin' => "SELECT is_admin FROM users LIMIT 1 WHERE 1=0",
-        'users.created_at' => "SELECT created_at FROM users LIMIT 1 WHERE 1=0",
+    $columns_to_check = [
+        ['table' => 'products', 'column' => 'product_stock'],
+        ['table' => 'products', 'column' => 'created_at'],
+        ['table' => 'users', 'column' => 'is_admin'],
+        ['table' => 'users', 'column' => 'created_at'],
     ];
 
+    $col_stmt = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :col");
     $all_columns_exist = true;
-    foreach ($critical_checks as $column => $check_sql) {
-        try {
-            $pdo->query($check_sql);
-            echo "  ✓ Column {$column} exists\n";
-        } catch (PDOException $e) {
-            echo "  ✗ Column {$column} missing\n";
+
+    foreach ($columns_to_check as $item) {
+        $col_stmt->execute([':table' => $item['table'], ':col' => $item['column']]);
+        $exists = (bool)$col_stmt->fetchColumn();
+        if ($exists) {
+            echo "  ✓ Column {$item['table']}.{$item['column']} exists\n";
+        } else {
+            echo "  ✗ Column {$item['table']}.{$item['column']} missing\n";
             $all_columns_exist = false;
         }
     }

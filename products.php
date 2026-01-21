@@ -489,7 +489,7 @@ function initializeAddToCart() {
         }, 1500);
         showToast(name + ' added to cart!', 'success');
       } else {
-        showToast('Could not add to cart', 'error');
+        showToast('No stock available.', 'error');
         btn.textContent = 'Add to Cart';
         btn.disabled = false;
         btn.classList.add('btn-primary');

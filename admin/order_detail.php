@@ -327,19 +327,30 @@ include 'includes/header.php';
         <h2 class="card-title">Order Summary</h2>
     </div>
 
-    <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--admin-border);">
-        <span>Subtotal:</span>
-        <strong>₱<?php echo number_format($order['subtotal'], 2); ?></strong>
+    <div class="order-summary-admin-row">
+        <span class="order-summary-admin-label">
+            <i class="fas fa-shopping-cart"></i> Subtotal
+        </span>
+        <strong class="order-summary-admin-value">₱<?php echo number_format($order['subtotal'], 2); ?></strong>
     </div>
-    <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--admin-border);">
-        <span>Shipping Cost:</span>
-        <strong>₱<?php echo number_format($order['shipping_cost'], 2); ?></strong>
+    <div class="order-summary-admin-row">
+        <span class="order-summary-admin-label">
+            <i class="fas fa-truck"></i> Shipping Cost
+        </span>
+        <strong class="order-summary-admin-value">₱<?php echo number_format($order['shipping_cost'], 2); ?></strong>
     </div>
-    <div style="display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--admin-border);">
-        <span>Tax:</span>
-        <strong>₱<?php echo number_format($order['tax'], 2); ?></strong>
+    <div class="order-summary-admin-row">
+        <span class="order-summary-admin-label">
+            <i class="fas fa-calculator"></i> Tax
+        </span>
+        <strong class="order-summary-admin-value">₱<?php echo number_format($order['tax'], 2); ?></strong>
     </div>
-    <div style="display: flex; justify-content: space-between; padding: 1.5rem 0; color: var(--accent-gold); font-size: 1.3rem; font-weight: 700;">
-        <span>Total Amount:</span>
+    <div class="order-summary-admin-divider"></div>
+    <div class="order-summary-admin-row order-summary-admin-total">
+        <span class="order-summary-admin-label">
+            <i class="fas fa-money-bill-wave"></i> Total Amount
+        </span>
+        <strong class="order-summary-admin-value">₱<?php echo number_format($order['subtotal'] + $order['shipping_cost'] + $order['tax'], 2); ?></strong>
+    </div>
 
 <?php include 'includes/footer.php'; ?>

@@ -497,7 +497,26 @@ document.addEventListener('DOMContentLoaded', function() {
     buyBtn.disabled = true;
     const productId = '<?php echo (int) $productId; ?>';
     
-    // Buy Now: skip cart and go straight to checkout
+    // Check if user is logged in
+    const body = document.querySelector('body');
+    const isLoggedIn = body && body.getAttribute('data-logged-in') === '1';
+    
+    if (!isLoggedIn) {
+      // Show toast message and open login modal
+      showToast('Please log in to continue', 'warning');
+      const accountModal = document.getElementById('accountModal');
+      if (accountModal && typeof bootstrap !== 'undefined') {
+        const modal = new bootstrap.Modal(accountModal);
+        modal.show();
+      } else {
+        // Fallback: redirect to login page with return URL
+        window.location.href = 'login.php?redirect=product_detail.php?id=' + productId;
+      }
+      buyBtn.disabled = false;
+      return;
+    }
+    
+    // Buy Now: skip cart and go straight to checkout (only if logged in)
     try {
       window.location.href = 'checkout.php?buyNow=1&productId=' + productId + '&qty=' + quantity;
     } catch (err) {

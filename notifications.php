@@ -136,8 +136,15 @@ include 'includes/header.php';
 
     <div class="orders-wrapper py-5">
         <div class="container-xl">
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
+            <div class="row g-4">
+                <?php 
+                $active_page = 'notifications';
+                include 'includes/account_sidebar.php'; 
+                ?>
+                
+                <main class="col-lg-9">
+                    <div class="row">
+                        <div class="col-12">
                     <div class="card shadow-sm border-0 rounded-4">
                         <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center p-4">
                             <div>
@@ -190,7 +197,12 @@ include 'includes/header.php';
                                             case 'info': // Handle old schema where message_reply was stored as 'info'
                                                 // Check if this is a message reply by title
                                                 if (stripos($notification['title'], 'reply') !== false || stripos($notification['title'], 'message') !== false) {
-                                                    $notification_link = 'my_messages.php';
+                                                    // Link to messages page, optionally with specific message if related_id exists
+                                                    if (isset($notification['related_id']) && $notification['related_id']) {
+                                                        $notification_link = 'my_messages.php?view=' . $notification['related_id'];
+                                                    } else {
+                                                        $notification_link = 'my_messages.php';
+                                                    }
                                                     $is_clickable = true;
                                                 }
                                                 break;
@@ -286,7 +298,9 @@ include 'includes/header.php';
                             <?php endif; ?>
                         </div>
                     </div>
-                </div>
+                        </div>
+                    </div>
+                </main>
             </div>
         </div>
     </div>

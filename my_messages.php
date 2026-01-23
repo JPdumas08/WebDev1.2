@@ -96,6 +96,13 @@ include 'includes/header.php';
 
     <div class="orders-wrapper py-5">
         <div class="container-xl">
+            <div class="row g-4">
+                <?php 
+                $active_page = 'messages';
+                include 'includes/account_sidebar.php'; 
+                ?>
+                
+                <main class="col-lg-9">
             <?php if (empty($all_messages)): ?>
                 <div class="card shadow-sm border-0 rounded-4">
                     <div class="card-body text-center py-5">
@@ -120,6 +127,7 @@ include 'includes/header.php';
                                 <div class="list-group list-group-flush">
                                     <?php foreach ($all_messages as $msg): ?>
                                         <a href="?view=<?php echo $msg['message_id']; ?>" 
+                                           id="message-<?php echo $msg['message_id']; ?>"
                                            class="list-group-item message-item <?php echo $viewing_message_id == $msg['message_id'] ? 'active' : ''; ?> <?php echo $msg['status'] === 'replied' ? 'message-replied' : ''; ?> <?php echo $msg['status'] === 'closed' ? 'message-closed' : ''; ?> p-3 text-decoration-none">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div class="flex-grow-1">
@@ -211,9 +219,33 @@ include 'includes/header.php';
                     </div>
                 </div>
             <?php endif; ?>
+                </main>
+            </div>
         </div>
     </div>
 
     <?php include 'includes/footer.php'; ?>
+    <script>
+    // Auto-scroll and highlight message if coming from notification
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewMessageId = urlParams.get('view');
+        
+        if (viewMessageId) {
+            // Mark the message as active (already done server-side, but ensure it's visible)
+            const messageElement = document.getElementById('message-' + viewMessageId);
+            if (messageElement) {
+                // Scroll to the message in the sidebar
+                messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add a highlight animation
+                messageElement.style.transition = 'background-color 0.3s';
+                messageElement.style.backgroundColor = '#e7f3ff';
+                setTimeout(function() {
+                    messageElement.style.backgroundColor = '';
+                }, 2000);
+            }
+        }
+    });
+    </script>
 </body>
 </html>

@@ -122,6 +122,30 @@ $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
         @media (max-width: 768px) {
             .items-header, .item-row { grid-template-columns: 50px 1fr 60px 90px 90px; }
         }
+        
+        /* Fix dropdown z-index to ensure it's clickable - must be higher than modal backdrop (1040) */
+        .navbar {
+            z-index: 1055 !important;
+            position: relative;
+        }
+        .navbar .dropdown-toggle {
+            z-index: 1056 !important;
+            position: relative;
+            pointer-events: auto !important;
+        }
+        .navbar .dropdown-menu {
+            z-index: 1057 !important;
+            pointer-events: auto !important;
+        }
+        /* Ensure no backdrop is blocking */
+        .modal-backdrop {
+            z-index: 1040 !important;
+        }
+        /* Make sure navbar items are clickable */
+        .navbar-nav .nav-item {
+            position: relative;
+            z-index: 1056 !important;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +161,23 @@ $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <h1 class="page-title mb-0">Thank you! Your order is confirmed</h1>
                     </div>
                     <div class="page-sub">A confirmation email has been sent to <?php echo htmlspecialchars($order['email_address']); ?>.</div>
+                </div>
+
+                <!-- User Profile Section -->
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="avatar-circle">
+                            <?php 
+                            $user_full_name = trim($order['first_name'] . ' ' . $order['last_name']);
+                            echo strtoupper(substr($user_full_name, 0, 1)); 
+                            ?>
+                        </div>
+                        <div>
+                            <div class="text-muted small">Hello,</div>
+                            <div class="fw-semibold"><?php echo htmlspecialchars($user_full_name); ?></div>
+                            <div class="small text-muted"><?php echo htmlspecialchars($order['email_address']); ?></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Meta Row -->
@@ -292,8 +333,71 @@ $order_items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Handle cancel order functionality
+        // Remove any lingering modal backdrops that might block clicks
+        function removeModalBackdrops() {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(function(backdrop) {
+                backdrop.remove();
+            });
+            // Also remove backdrop class from body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+        
+        // Ensure dropdowns are properly initialized and handle cancel order
         document.addEventListener('DOMContentLoaded', function() {
+            // Remove any modal backdrops first
+            removeModalBackdrops();
+            
+            // Wait a bit for any animations to complete
+            setTimeout(function() {
+                // Initialize all dropdowns
+                const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
+                dropdownElementList.forEach(function(dropdownToggleEl) {
+                    if (dropdownToggleEl && typeof bootstrap !== 'undefined') {
+                        // Dispose existing dropdown if any
+                        const existingDropdown = bootstrap.Dropdown.getInstance(dropdownToggleEl);
+                        if (existingDropdown) {
+                            existingDropdown.dispose();
+                        }
+                        // Create new dropdown instance
+                        new bootstrap.Dropdown(dropdownToggleEl, {
+                            boundary: 'viewport',
+                            popperConfig: {
+                                modifiers: [
+                                    {
+                                        name: 'preventOverflow',
+                                        options: {
+                                            boundary: document.body
+                                        }
+                                    }
+                                ]
+                            }
+                        });
+                    }
+                });
+                
+                // Ensure dropdown menu is clickable
+                const dropdownMenus = document.querySelectorAll('.dropdown-menu');
+                dropdownMenus.forEach(function(menu) {
+                    menu.style.pointerEvents = 'auto';
+                    menu.style.zIndex = '1057';
+                });
+                
+                // Ensure dropdown toggle is clickable
+                const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+                dropdownToggles.forEach(function(toggle) {
+                    toggle.style.pointerEvents = 'auto';
+                    toggle.style.zIndex = '1056';
+                    toggle.style.cursor = 'pointer';
+                });
+            }, 100);
+            
+            // Also check periodically for any new backdrops
+            setInterval(removeModalBackdrops, 500);
+            
+            // Handle cancel order functionality
             const cancelBtn = document.getElementById('cancelOrderBtn');
             if (cancelBtn) {
                 cancelBtn.addEventListener('click', function() {

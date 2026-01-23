@@ -71,10 +71,11 @@ $user = current_user();
         <?php if (!empty($user)): ?>
           <!-- Notifications (Logged in users only) -->
           <?php 
-            // Get unread notification count safely for either user_id or id keys
+            // Get unread notification count for all notification types
             try {
               $user_id = isset($user['user_id']) ? (int)$user['user_id'] : (isset($user['id']) ? (int)$user['id'] : null);
               if ($user_id) {
+                // Count all unread notifications (order updates, message replies, etc.)
                 $notif_count_sql = "SELECT COUNT(*) FROM notifications WHERE user_id = :uid AND is_read = 0";
                 $notif_count_stmt = $pdo->prepare($notif_count_sql);
                 $notif_count_stmt->execute([':uid' => $user_id]);

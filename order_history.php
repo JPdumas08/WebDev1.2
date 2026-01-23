@@ -63,39 +63,10 @@ include 'includes/header.php';
     <div class="orders-wrapper py-5">
         <div class="container-xl">
             <div class="row g-4">
-                <aside class="col-lg-3">
-                    <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-3">
-                        <div class="card-body d-flex align-items-center gap-3">
-                            <div class="avatar-circle">
-                                <?php echo strtoupper(substr($user_name, 0, 1)); ?>
-                            </div>
-                            <div>
-                                <div class="text-muted small">Hello,</div>
-                                <div class="fw-semibold"><?php echo htmlspecialchars($user_name); ?></div>
-                                <?php if (!empty($user_email)): ?>
-                                    <div class="small text-muted"><?php echo htmlspecialchars($user_email); ?></div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="list-group list-group-flush orders-nav">
-                            <a class="list-group-item" href="account_settings.php">Personal Information</a>
-                            <a class="list-group-item" href="address.php">Address</a>
-                            <a class="list-group-item" href="wishlist.php">Wishlist</a>
-                            <a class="list-group-item active" aria-current="true" href="order_history.php">My Orders</a>
-                            <a class="list-group-item" href="notifications.php">Notifications</a>
-                            <a class="list-group-item" href="account_settings.php">Change Password</a>
-                            <a class="list-group-item" href="logout.php">Logout</a>
-                        </div>
-                    </div>
-
-                    <div class="card shadow-sm border-0 rounded-4 need-help">
-                        <div class="card-body text-center">
-                            <div class="fs-4 mb-2">Need Help?</div>
-                            <p class="text-muted small mb-3">Have questions or concerns regarding your account? Connect with our support team.</p>
-                            <a href="contactus.php" class="btn btn-outline-primary w-100">Contact Support</a>
-                        </div>
-                    </div>
-                </aside>
+                <?php 
+                $active_page = 'order_history';
+                include 'includes/account_sidebar.php'; 
+                ?>
 
                 <main class="col-lg-9">
                     <div class="card shadow-sm border-0 rounded-4 orders-panel">

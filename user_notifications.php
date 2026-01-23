@@ -54,6 +54,14 @@ try {
 $pageTitle = 'Jeweluxe - Notifications';
 require_once __DIR__ . '/includes/header.php';
 ?>
+<style>
+.cursor-pointer {
+    cursor: pointer;
+}
+.cursor-pointer:hover {
+    background-color: #f0f0f0 !important;
+}
+</style>
 
 <div class="container py-5">
     <div class="row">
@@ -123,8 +131,23 @@ require_once __DIR__ . '/includes/header.php';
                             'promotion' => 'bg-danger'
                         ][$notif['type']] ?? 'bg-secondary';
                     ?>
-                        <div class="list-group-item <?php echo $notif['is_read'] ? '' : 'list-group-item-action bg-light'; ?>" 
-                             style="<?php echo $notif['is_read'] ? '' : 'border-left: 4px solid #0d6efd;'; ?>">
+                        <?php
+                        // Determine if notification is clickable and where it should link
+                        $notification_link = '';
+                        $is_clickable = false;
+                        $relatedId = $notif['related_id'] ?? null;
+                        
+                        if ($notif['type'] === 'message_reply' && $relatedId) {
+                            $notification_link = 'my_messages.php?view=' . $relatedId;
+                            $is_clickable = true;
+                        } elseif (in_array($notif['type'], ['order_status', 'order_update']) && $relatedId) {
+                            $notification_link = 'order_history.php?view=' . $relatedId;
+                            $is_clickable = true;
+                        }
+                        ?>
+                        <div class="list-group-item <?php echo $notif['is_read'] ? '' : 'list-group-item-action bg-light'; ?> <?php echo $is_clickable ? 'cursor-pointer' : ''; ?>" 
+                             style="<?php echo $notif['is_read'] ? '' : 'border-left: 4px solid #0d6efd;'; ?>"
+                             <?php if ($is_clickable): ?>onclick="window.location.href='<?php echo htmlspecialchars($notification_link, ENT_QUOTES); ?>'"<?php endif; ?>>
                             <div class="d-flex w-100 justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center mb-2">
@@ -140,11 +163,16 @@ require_once __DIR__ . '/includes/header.php';
                                         <?php echo date('F j, Y g:i A', strtotime($notif['created_at'])); ?>
                                     </small>
                                     
-                                    <?php $relatedId = $notif['related_id'] ?? null; ?>
                                     <?php if ($relatedId && in_array($notif['type'], ['order_status', 'order_update'])): ?>
                                         <div class="mt-2">
-                                            <a href="order_history.php?view=<?php echo $relatedId; ?>" class="btn btn-sm btn-outline-primary">
+                                            <a href="order_history.php?view=<?php echo $relatedId; ?>" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();">
                                                 <i class="fas fa-external-link-alt me-1"></i>View Order
+                                            </a>
+                                        </div>
+                                    <?php elseif ($relatedId && $notif['type'] === 'message_reply'): ?>
+                                        <div class="mt-2">
+                                            <a href="my_messages.php?view=<?php echo $relatedId; ?>" class="btn btn-sm btn-outline-success" onclick="event.stopPropagation();">
+                                                <i class="fas fa-envelope me-1"></i>View Message
                                             </a>
                                         </div>
                                     <?php endif; ?>

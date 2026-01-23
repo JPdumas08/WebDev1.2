@@ -7,6 +7,63 @@ $pageTitle = 'Jeweluxe - Products';
 require_once __DIR__ . '/includes/header.php';
 ?>
 
+  <style>
+/* List View Styling */
+.product-list-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e0e0e0 !important;
+}
+
+.product-list-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  border-color: #8b6f47 !important;
+}
+
+.product-list-card .card-body {
+  padding: 1.5rem;
+}
+
+.product-list-card img {
+  transition: transform 0.3s ease;
+}
+
+.product-list-card:hover img {
+  transform: scale(1.05);
+}
+
+.product-list-card .card-title a:hover {
+  color: #8b6f47 !important;
+}
+
+/* Responsive adjustments for list view */
+@media (max-width: 768px) {
+  .product-list-card .card-body {
+    padding: 1rem;
+  }
+  
+  .product-list-card .row > div {
+    margin-bottom: 1rem;
+  }
+  
+  .product-list-card .d-flex {
+    flex-direction: column;
+  }
+  
+  .product-list-card .d-flex button {
+    width: 100% !important;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* View toggle button active state */
+.view-toggle-btn.active {
+  background-color: #8b6f47 !important;
+  border-color: #8b6f47 !important;
+  color: white !important;
+}
+</style>
+
 <!-- ELEGANT JEWELRY HERO SECTION -->
 <header class="jewelry-hero" style="background: linear-gradient(135deg, rgba(139, 111, 71, 0.75) 0%, rgba(168, 153, 104, 0.75) 100%), url('Video/wallpaper.jpg') center/cover no-repeat; min-height: 50vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
   <!-- Decorative overlay -->
@@ -282,14 +339,13 @@ function updateProductDisplay(products) {
                     <span class="badge bg-success">Save 20%</span>
                   </div>
                 </div>
-                        ${stock <= 0 ? 'disabled' : ''}>
-                  <i class="fas fa-shopping-cart me-2"></i>${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                 <button class="btn btn-primary w-100 rounded-pill add-to-cart" 
                         data-id="${p.product_id}" 
                         data-name="${name}" 
                         data-price="${p.product_price}" 
-                        data-image="${img}">
-                  <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                        data-image="${img}"
+                        ${stock <= 0 ? 'disabled' : ''}>
+                  <i class="fas fa-shopping-cart me-2"></i>${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
                 </button>
               </div>
             </div>
@@ -299,16 +355,20 @@ function updateProductDisplay(products) {
         // List view
         html += `
           <div class="col-12 mb-3">
-            <div class="card product-list-card" data-detail-url="product_detail.php?id=${p.product_id}">
-              <div class="card-body">
+            <div class="card product-list-card shadow-sm" data-detail-url="product_detail.php?id=${p.product_id}" style="border: 1px solid #e0e0e0; border-radius: 8px; transition: all 0.3s ease;">
+              <div class="card-body p-4">
                 <div class="row align-items-center">
-                  <div class="col-md-2">
-                    <img src="${img}" alt="${name}" class="img-fluid rounded" style="height: 120px; object-fit: cover;">
+                  <div class="col-md-2 col-12 mb-3 mb-md-0">
+                    <img src="${img}" alt="${name}" class="img-fluid rounded" style="height: 150px; width: 100%; object-fit: cover; cursor: pointer;" onclick="window.location.href='product_detail.php?id=${p.product_id}'">
                   </div>
-                  <div class="col-md-5">
-                    <h5 class="card-title"><a href="product_detail.php?id=${p.product_id}" class="text-decoration-none text-dark">${name}</a></h5>
-                    <p class="text-muted mb-2">${(p.category || 'Jewelry').charAt(0).toUpperCase() + (p.category || 'Jewelry').slice(1)}</p>
-                    <div class="stars text-warning">
+                  <div class="col-md-5 col-12">
+                    <h5 class="card-title mb-2">
+                      <a href="product_detail.php?id=${p.product_id}" class="text-decoration-none text-dark fw-bold">${name}</a>
+                    </h5>
+                    <p class="text-muted mb-2 small">
+                      <i class="fas fa-tag me-1"></i>${(p.category || 'Jewelry').charAt(0).toUpperCase() + (p.category || 'Jewelry').slice(1)}
+                    </p>
+                    <div class="stars text-warning mb-2">
                       <i class="fas fa-star"></i>
                       <i class="fas fa-star"></i>
                       <i class="fas fa-star"></i>
@@ -316,37 +376,45 @@ function updateProductDisplay(products) {
                       <i class="fas fa-star-half-alt"></i>
                       <small class="text-muted ms-2">(4.5)</small>
                     </div>
-                    <div class="mt-2">
+                    <div class="mb-2">
                       <small class="${stockClass}">
-                        <i class="fas ${stockIcon} me-1"></i>${stockStatus} ${stock > 0 ? '(' + stock + ' available)' : ''}
+                        <i class="fas ${stockIcon} me-1"></i><strong>${stockStatus}</strong> ${stock > 0 ? '(' + stock + ' available)' : ''}
                       </small>
                     </div>
                   </div>
-                  <div class="col-md-2 text-center">
-                    <h5 class="text-primary">${price}</h5>
-                    <small class="text-muted"><del>${originalPrice}</del></small>
+                  <div class="col-md-2 col-12 text-center mb-3 mb-md-0">
+                    <div class="mb-2">
+                      <h5 class="text-primary fw-bold mb-0">${price}</h5>
+                      <small class="text-muted"><del>${originalPrice}</del></small>
+                    </div>
+                    <span class="badge bg-success">Save 20%</span>
                   </div>
-                  <div class="col-md-3 text-end">
-                    <button class="btn btn-sm btn-light me-2 wishlist-btn" data-product-id="${p.product_id}">
-                      <i class="far fa-heart wishlist-icon text-danger"></i>
-                    </button>
-                    <button class="btn btn-sm btn-info me-2 quick-view-btn" data-product-id="${p.product_id}" data-product-name="${name}" data-product-price="${p.product_price}" data-product-image="${img}">
-                      <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="btn btn-sm btn-primary add-to-cart" 
-                            data-id="${p.product_id}" 
-                            data-name="${name}" 
-                            data-price="${p.product_price}" 
-                            data-image="${img}"
-                            ${stock <= 0 ? 'disabled' : ''}>
-                      <i class="fas fa-shopping-cart"></i> ${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-                    </button>
-                            data-id="${p.product_id}" 
-                            data-name="${name}" 
-                            data-price="${p.product_price}" 
-                            data-image="${img}">
-                      <i class="fas fa-cart-plus"></i> Add
-                    </button>
+                  <div class="col-md-3 col-12">
+                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+                      <button class="btn btn-sm btn-outline-danger wishlist-btn" 
+                              data-product-id="${p.product_id}"
+                              title="Add to Wishlist"
+                              style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                        <i class="far fa-heart wishlist-icon"></i>
+                      </button>
+                      <button class="btn btn-sm btn-info quick-view-btn" 
+                              data-product-id="${p.product_id}" 
+                              data-product-name="${name}" 
+                              data-product-price="${p.product_price}" 
+                              data-product-image="${img}"
+                              title="Quick View">
+                        <i class="fas fa-eye me-1"></i> View
+                      </button>
+                      <button class="btn btn-sm btn-primary add-to-cart flex-fill flex-md-grow-0" 
+                              data-id="${p.product_id}" 
+                              data-name="${name}" 
+                              data-price="${p.product_price}" 
+                              data-image="${img}"
+                              ${stock <= 0 ? 'disabled' : ''}
+                              style="min-width: 120px;">
+                        <i class="fas fa-shopping-cart me-1"></i> ${stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

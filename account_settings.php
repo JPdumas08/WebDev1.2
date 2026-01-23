@@ -130,7 +130,14 @@ include 'includes/header.php';
             <?php endif; ?>
 
             <div class="row g-4">
-                <div class="col-lg-6">
+                <?php 
+                $active_page = 'account_settings';
+                include 'includes/account_sidebar.php'; 
+                ?>
+                
+                <main class="col-lg-9">
+                    <div class="row g-4">
+                        <div class="col-lg-6">
                     <div class="card shadow-sm border-0 rounded-4">
                         <div class="card-body p-4">
                             <h5 class="card-title mb-4">Personal Information</h5>
@@ -168,7 +175,7 @@ include 'includes/header.php';
                 </div>
 
                 <div class="col-lg-6">
-                    <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card shadow-sm border-0 rounded-4" id="password">
                         <div class="card-body p-4">
                             <h5 class="card-title mb-4">Change Password</h5>
                             <form method="POST">
@@ -192,7 +199,9 @@ include 'includes/header.php';
                             </form>
                         </div>
                     </div>
-                </div>
+                        </div>
+                    </div>
+                </main>
             </div>
         </div>
     </div>

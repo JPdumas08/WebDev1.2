@@ -312,7 +312,14 @@ include 'includes/header.php';
             <?php endif; ?>
 
             <div class="row g-4">
-                <div class="col-lg-8">
+                <?php 
+                $active_page = 'address';
+                include 'includes/account_sidebar.php'; 
+                ?>
+                
+                <main class="col-lg-9">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="mb-0">Saved Addresses</h5>
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal">
@@ -382,7 +389,9 @@ include 'includes/header.php';
                             </ul>
                         </div>
                     </div>
-                </div>
+                        </div>
+                    </div>
+                </main>
             </div>
         </div>
     </div>

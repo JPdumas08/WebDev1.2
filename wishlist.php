@@ -63,8 +63,15 @@ include 'includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <div class="row wishlist-layout g-4">
-                <div class="col-lg-8 col-xl-9">
+            <div class="row g-4">
+                <?php 
+                $active_page = 'wishlist';
+                include 'includes/account_sidebar.php'; 
+                ?>
+                
+                <main class="col-lg-9">
+                    <div class="row wishlist-layout g-4">
+                        <div class="col-12">
                     <?php if (empty($wishlist_items)): ?>
                         <div class="card shadow-sm border-0 rounded-4">
                             <div class="card-body text-center py-5">
@@ -115,27 +122,9 @@ include 'includes/header.php';
                             </div>
                         </div>
                     <?php endif; ?>
-                </div>
-
-                <div class="col-lg-4 col-xl-3 wishlist-sidebar">
-                    <div class="card shadow-sm border-0 rounded-4 mb-3">
-                        <div class="card-body wishlist-tips">
-                            <h6 class="mb-3 d-flex align-items-center gap-2"><span class="tips-icon">💡</span> Wishlist Tips</h6>
-                            <ul class="small text-muted mb-0">
-                                <li class="mb-1">Items stay saved for you.</li>
-                                <li class="mb-1">Price drop alerts.</li>
-                                <li class="mb-1">Share with friends.</li>
-                            </ul>
                         </div>
                     </div>
-
-                    <div class="card shadow-sm border-0 rounded-4">
-                        <div class="card-body text-center wishlist-cta">
-                            <h6 class="mb-2">Keep Shopping</h6>
-                            <a href="products.php" class="btn btn-outline-primary w-100">Browse Products</a>
-                        </div>
-                    </div>
-                </div>
+                </main>
             </div>
         </div>
     </div>

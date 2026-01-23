@@ -59,13 +59,13 @@ try {
         JOIN products p ON oi.product_id = p.product_id
         LEFT JOIN product_reviews pr ON pr.product_id = oi.product_id 
             AND pr.user_id = :uid 
-            AND (pr.order_id = :oid OR pr.order_id IS NULL)
+            AND (pr.order_id = :order_id_review OR pr.order_id IS NULL)
         WHERE oi.order_id = :oid
         ORDER BY oi.order_item_id ASC
     ";
     
     $items_stmt = $pdo->prepare($items_sql);
-    $items_stmt->execute([':oid' => $order_id, ':uid' => $user_id]);
+    $items_stmt->execute([':oid' => $order_id, ':uid' => $user_id, ':order_id_review' => $order_id]);
     $items = $items_stmt->fetchAll(PDO::FETCH_ASSOC);
     
     if (empty($items)) {
@@ -92,8 +92,8 @@ try {
 
 } catch (PDOException $e) {
     error_log('Get order items for review PDO error: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error occurred. Please try again.']);
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]); // DEBUG: show actual error
 } catch (Exception $e) {
     error_log('Get order items for review error: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'An error occurred while loading order items.']);
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]); // DEBUG: show actual error
 }

@@ -110,7 +110,7 @@ try {
     error_log("Reorder error: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'An error occurred while adding items to cart. Please try again.'
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
 }
 ?>

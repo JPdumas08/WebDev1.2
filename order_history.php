@@ -27,8 +27,12 @@ $orders_sql = "SELECT o.*, COUNT(oi.order_item_id) as item_count
                GROUP BY o.order_id
                ORDER BY o.created_at DESC";
 
+
 $stmt = $pdo->prepare($orders_sql);
-$stmt->execute([':uid' => $user_id]);
+if (!$stmt->execute([':uid' => $user_id])) {
+    $errorInfo = $stmt->errorInfo();
+    die('Database error: ' . htmlspecialchars($errorInfo[2]));
+}
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Prepared statement for quick product preview per order
@@ -184,6 +188,10 @@ include 'includes/header.php';
                                                     
                                                     <div class="d-flex flex-column gap-2">
                                                         <?php if ($status_key === 'delivered'): ?>
+                                                            <button class="btn-review-order" onclick="openReviewModal(<?php echo $order['order_id']; ?>)">
+                                                                <i class="fas fa-star"></i>
+                                                                Review Order
+                                                            </button>
                                                             <button class="btn-reorder" onclick="reorderItems(<?php echo $order['order_id']; ?>)">
                                                                 <i class="fas fa-redo"></i>
                                                                 Reorder
@@ -393,6 +401,43 @@ include 'includes/header.php';
 
     <?php include 'includes/footer.php'; ?>
 
+    <style>
+        /* Review Modal Styles */
+        .review-item-card {
+            background: #fafbfc;
+            transition: all 0.3s ease;
+        }
+        .review-item-card:hover {
+            background: #f3f4f6;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .rating-stars {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .rating-stars .star-rating {
+            font-size: 28px;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .rating-stars .star-rating:hover {
+            transform: scale(1.15);
+        }
+        .rating-stars .star-rating.active {
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(255, 215, 0, 0.4);
+        }
+        .rating-stars .star-rating.fas {
+            color: #ffd700;
+        }
+        .rating-stars .star-rating.far {
+            color: #ddd;
+        }
+    </style>
+
     <script>
         // Toggle order details with smooth expand/collapse
         function toggleOrderDetails(orderId) {
@@ -506,4 +551,304 @@ include 'includes/header.php';
                 });
             });
         })();
+
+        // Review Order Modal Function
+        function openReviewModal(orderId) {
+            // Fetch order items for review
+            fetch('get_order_items_for_review.php?order_id=' + orderId, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => {
+                    // Check if response is OK
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    // Check if response is actually JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        // If redirected to login page, we'll get HTML
+                        if (response.redirected || response.url.includes('login.php')) {
+                            throw new Error('Session expired. Please log in again.');
+                        }
+                        return response.text().then(text => {
+                            console.error('Non-JSON response:', text.substring(0, 200));
+                            throw new Error('Invalid response format. Please try again.');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.items) {
+                        showReviewModal(orderId, data.items);
+                    } else {
+                        ToastNotification.error(data.message || 'Unable to load order items for review.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Review modal error:', error);
+                    ToastNotification.error(error.message || 'An error occurred while loading order items. Please try again.');
+                });
+        }
+
+        function showReviewModal(orderId, items) {
+            // Create modal HTML
+            let modalHTML = `
+                <div class="modal fade" id="reviewOrderModal" tabindex="-1" aria-labelledby="reviewOrderModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); border-bottom: none;">
+                                <h5 class="modal-title fw-bold" id="reviewOrderModalLabel">
+                                    <i class="fas fa-star me-2"></i>Review Your Order
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                                <p class="text-muted mb-4">Share your experience! Your feedback helps other customers and improves our service.</p>
+                                <div id="reviewItemsContainer">
+            `;
+
+            items.forEach((item, index) => {
+                const hasReview = item.has_review || false;
+                modalHTML += `
+                    <div class="review-item-card mb-4 p-4 border rounded-3" data-product-id="${item.product_id}">
+                        <div class="d-flex gap-3 mb-3">
+                            <img src="${item.product_image}" alt="${item.product_name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 fw-bold">${item.product_name}</h6>
+                                <p class="text-muted small mb-0">Quantity: ${item.quantity}</p>
+                                ${hasReview ? '<span class="badge bg-success mt-2"><i class="fas fa-check me-1"></i>Already Reviewed</span>' : ''}
+                            </div>
+                        </div>
+                        ${!hasReview ? `
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Rating <span class="text-danger">*</span></label>
+                            <div class="rating-stars" data-product-id="${item.product_id}">
+                                <i class="far fa-star star-rating" data-rating="1" data-product="${item.product_id}"></i>
+                                <i class="far fa-star star-rating" data-rating="2" data-product="${item.product_id}"></i>
+                                <i class="far fa-star star-rating" data-rating="3" data-product="${item.product_id}"></i>
+                                <i class="far fa-star star-rating" data-rating="4" data-product="${item.product_id}"></i>
+                                <i class="far fa-star star-rating" data-rating="5" data-product="${item.product_id}"></i>
+                            </div>
+                            <input type="hidden" class="product-rating" data-product-id="${item.product_id}" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label for="review-${item.product_id}" class="form-label fw-semibold">Your Review <span class="text-danger">*</span></label>
+                            <textarea class="form-control product-review" id="review-${item.product_id}" data-product-id="${item.product_id}" rows="3" placeholder="Share your thoughts about this product..." required></textarea>
+                        </div>
+                        ` : '<div class="alert alert-success mb-0"><i class="fas fa-check-circle me-2"></i>You have already reviewed this product.</div>'}
+                    </div>
+                `;
+            });
+
+            modalHTML += `
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="submitOrderReviews(${orderId})">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Reviews
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if any
+            const existingModal = document.getElementById('reviewOrderModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Initialize star ratings
+            initializeStarRatings();
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('reviewOrderModal'));
+            modal.show();
+        }
+
+        function initializeStarRatings() {
+            document.querySelectorAll('.star-rating').forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    const productId = this.dataset.product;
+                    const stars = document.querySelectorAll(`[data-product="${productId}"].star-rating`);
+                    const ratingInput = document.querySelector(`.product-rating[data-product-id="${productId}"]`);
+
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.classList.add('active');
+                            s.classList.remove('far');
+                            s.classList.add('fas');
+                            s.style.color = '#ffd700';
+                        } else {
+                            s.classList.remove('active');
+                            s.classList.remove('fas');
+                            s.classList.add('far');
+                            s.style.color = '#ddd';
+                        }
+                    });
+
+                    if (ratingInput) {
+                        ratingInput.value = rating;
+                    }
+                });
+
+                star.addEventListener('mouseenter', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    const productId = this.dataset.product;
+                    const stars = document.querySelectorAll(`[data-product="${productId}"].star-rating`);
+
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.style.color = '#ffd700';
+                        } else {
+                            s.style.color = '#ddd';
+                        }
+                    });
+                });
+
+                // Add mouseleave handler to rating container
+                const ratingContainer = star.closest('.rating-stars');
+                if (ratingContainer && !ratingContainer.dataset.mouseleaveHandler) {
+                    ratingContainer.dataset.mouseleaveHandler = 'true';
+                    ratingContainer.addEventListener('mouseleave', function() {
+                        const productId = this.dataset.productId;
+                        const stars = document.querySelectorAll(`[data-product="${productId}"].star-rating`);
+                        const ratingInput = document.querySelector(`.product-rating[data-product-id="${productId}"]`);
+                        const currentRating = ratingInput ? parseInt(ratingInput.value) : 0;
+
+                        stars.forEach((s, index) => {
+                            if (index < currentRating) {
+                                s.style.color = '#ffd700';
+                            } else {
+                                s.style.color = '#ddd';
+                            }
+                        });
+                    });
+                }
+            });
+        }
+
+        function submitOrderReviews(orderId) {
+            const reviewItems = document.querySelectorAll('.review-item-card[data-product-id]');
+            const reviews = [];
+            const errors = [];
+
+            reviewItems.forEach(item => {
+                const productId = item.dataset.productId;
+                const ratingInput = item.querySelector(`.product-rating[data-product-id="${productId}"]`);
+                const reviewTextarea = item.querySelector(`.product-review[data-product-id="${productId}"]`);
+
+                // Skip if already reviewed
+                if (!ratingInput || !reviewTextarea) {
+                    return;
+                }
+
+                const rating = parseInt(ratingInput.value);
+                const review = reviewTextarea.value.trim();
+
+                if (rating === 0) {
+                    errors.push(`Please provide a rating for ${item.querySelector('h6').textContent}`);
+                } else if (review.length === 0) {
+                    errors.push(`Please write a review for ${item.querySelector('h6').textContent}`);
+                } else if (review.length < 10) {
+                    errors.push(`Review for ${item.querySelector('h6').textContent} must be at least 10 characters`);
+                } else {
+                    reviews.push({
+                        product_id: parseInt(productId),
+                        rating: rating,
+                        review_content: review
+                    });
+                }
+            });
+
+            if (errors.length > 0) {
+                ToastNotification.error(errors[0]);
+                return;
+            }
+
+            if (reviews.length === 0) {
+                ToastNotification.error('Please provide at least one rating and review, or all items have already been reviewed.');
+                return;
+            }
+
+            // Disable submit button
+            const submitBtn = document.querySelector('#reviewOrderModal .btn-primary');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting...';
+            }
+
+            // Submit each review
+            let submitted = 0;
+            let failed = 0;
+            const totalReviews = reviews.length;
+
+            reviews.forEach((review, index) => {
+                const formData = new FormData();
+                formData.append('product_id', review.product_id);
+                formData.append('order_id', orderId);
+                formData.append('rating', review.rating);
+                formData.append('review_content', review.review_content);
+
+                fetch('review_submit.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        submitted++;
+                    } else {
+                        failed++;
+                        console.error('Review submission failed:', data.message);
+                    }
+
+                    // Check if all reviews are processed
+                    if (submitted + failed === totalReviews) {
+                        if (submitted > 0) {
+                            ToastNotification.success(`${submitted} review${submitted > 1 ? 's' : ''} submitted successfully!`);
+                            // Close modal and reload page after a delay
+                            setTimeout(() => {
+                                const modalElement = document.getElementById('reviewOrderModal');
+                                if (modalElement) {
+                                    const modal = bootstrap.Modal.getInstance(modalElement);
+                                    if (modal) modal.hide();
+                                }
+                                setTimeout(() => location.reload(), 500);
+                            }, 1500);
+                        }
+                        if (failed > 0) {
+                            ToastNotification.error(`${failed} review${failed > 1 ? 's' : ''} failed to submit. Please try again.`);
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Submit Reviews';
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Review submission error:', error);
+                    failed++;
+                    if (submitted + failed === totalReviews) {
+                        ToastNotification.error('Some reviews failed to submit. Please try again.');
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Submit Reviews';
+                        }
+                    }
+                });
+            });
+        }
     </script>

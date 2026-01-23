@@ -133,4 +133,4 @@ $user = current_user();
       </ul>
     </div>
   </div>
-</nav></div>
+</nav>

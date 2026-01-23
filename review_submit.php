@@ -1,9 +1,16 @@
 <?php
-require_once __DIR__ . '/init_session.php';
-require_once __DIR__ . '/db.php';
-init_session();
-
+// Set JSON header FIRST to prevent any HTML redirects
 header('Content-Type: application/json');
+
+// Initialize session manually to avoid redirects in init_session.php
+require_once __DIR__ . '/includes/auth.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Now include database connection
+require_once __DIR__ . '/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
@@ -17,6 +24,7 @@ if (empty($_SESSION['user_id'])) {
 
 $user_id = (int) $_SESSION['user_id'];
 $product_id = (int) ($_POST['product_id'] ?? 0);
+$order_id = isset($_POST['order_id']) ? (int) $_POST['order_id'] : null;
 $rating = (int) ($_POST['rating'] ?? 0);
 $review_content = trim($_POST['review_content'] ?? '');
 
@@ -37,25 +45,47 @@ if (!$product) {
 }
 
 // Verify the user purchased this product on a completed order
-$verified_sql = "
-    SELECT oi.order_id
-    FROM orders o
-    JOIN order_items oi ON o.order_id = oi.order_id
-    WHERE o.user_id = :uid
-      AND oi.product_id = :pid
-      AND o.payment_status = 'paid'
-      AND o.order_status IN ('processing','shipped','delivered')
-    ORDER BY o.created_at DESC
-    LIMIT 1
-";
-$verified_stmt = $pdo->prepare($verified_sql);
-$verified_stmt->execute([':uid' => $user_id, ':pid' => $product_id]);
-$order = $verified_stmt->fetch(PDO::FETCH_ASSOC);
+if ($order_id) {
+    // If order_id is provided, verify it belongs to user and contains this product
+    $verified_sql = "
+        SELECT o.order_id
+        FROM orders o
+        JOIN order_items oi ON o.order_id = oi.order_id
+        WHERE o.order_id = :oid
+          AND o.user_id = :uid
+          AND oi.product_id = :pid
+          AND o.payment_status = 'paid'
+          AND o.order_status IN ('processing','shipped','delivered')
+        LIMIT 1
+    ";
+    $verified_stmt = $pdo->prepare($verified_sql);
+    $verified_stmt->execute([':oid' => $order_id, ':uid' => $user_id, ':pid' => $product_id]);
+    $order = $verified_stmt->fetch(PDO::FETCH_ASSOC);
+} else {
+    // If no order_id provided, find any valid order with this product
+    $verified_sql = "
+        SELECT oi.order_id
+        FROM orders o
+        JOIN order_items oi ON o.order_id = oi.order_id
+        WHERE o.user_id = :uid
+          AND oi.product_id = :pid
+          AND o.payment_status = 'paid'
+          AND o.order_status IN ('processing','shipped','delivered')
+        ORDER BY o.created_at DESC
+        LIMIT 1
+    ";
+    $verified_stmt = $pdo->prepare($verified_sql);
+    $verified_stmt->execute([':uid' => $user_id, ':pid' => $product_id]);
+    $order = $verified_stmt->fetch(PDO::FETCH_ASSOC);
+}
 
 if (!$order) {
     echo json_encode(['success' => false, 'message' => 'Reviews are limited to verified purchases of this product.']);
     exit();
 }
+
+// Use the verified order_id
+$verified_order_id = $order['order_id'];
 
 $pdo->beginTransaction();
 try {
@@ -80,7 +110,7 @@ try {
         $update_stmt->execute([
             ':rating' => $rating,
             ':content' => $review_content,
-            ':oid' => $order['order_id'],
+            ':oid' => $verified_order_id,
             ':rid' => $existing['review_id']
         ]);
         $message = 'Review updated and sent for approval.';
@@ -94,7 +124,7 @@ try {
         $insert_stmt->execute([
             ':pid' => $product_id,
             ':uid' => $user_id,
-            ':oid' => $order['order_id'],
+            ':oid' => $verified_order_id,
             ':rating' => $rating,
             ':content' => $review_content
         ]);

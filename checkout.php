@@ -135,17 +135,11 @@ foreach ($cart_items as $item) {
     $subtotal += ((float)$item['price']) * ((int)$item['quantity']);
 }
 $total = $subtotal + $shipping;
-?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - Jewelry Store</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <style>
+$pageTitle = 'Checkout - Jeweluxe';
+require_once __DIR__ . '/includes/header.php';
+?>
+<style>
         .order-summary-card {
             border: 1px solid #e0e0e0;
             border-radius: 8px;
@@ -260,12 +254,9 @@ $total = $subtotal + $shipping;
             font-size: 1.125rem !important;
             letter-spacing: -0.01em !important;
         }
-    </style>
-</head>
-<body>
-    <?php include 'includes/header.php'; ?>
-    
-    <div class="container mt-5">
+</style>
+
+<div class="container mt-5">
         <div class="row">
             <div class="col-md-8">
                 <div class="d-flex align-items-center gap-3 mb-4">
@@ -487,8 +478,6 @@ $total = $subtotal + $shipping;
             </div>
         </div>
     </div>
-    
-    <?php include 'includes/footer.php'; ?>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -886,5 +875,4 @@ $total = $subtotal + $shipping;
             defaultAddress.click();
         }
     </script>
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

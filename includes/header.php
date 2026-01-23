@@ -4,6 +4,7 @@
 require_once __DIR__ . '/auth.php';
 init_session();
 $pageTitle = $pageTitle ?? 'Jeweluxe';
+$bodyClass = $bodyClass ?? '';
 ?>
 <!doctype html>
 <html lang="en">
@@ -20,7 +21,7 @@ $pageTitle = $pageTitle ?? 'Jeweluxe';
   <!-- jQuery (needed by some inline page scripts) -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
-<body data-logged-in="<?php echo is_logged_in() ? '1' : '0'; ?>" data-user-id="<?php echo is_logged_in() ? (current_user()['id'] ?? '') : ''; ?>">
+<body class="<?= htmlspecialchars($bodyClass) ?>" data-logged-in="<?php echo is_logged_in() ? '1' : '0'; ?>" data-user-id="<?php echo is_logged_in() ? (current_user()['id'] ?? '') : ''; ?>">
 <?php include __DIR__ . '/navbar.php'; ?>
 <!-- Shared Modals moved here so they are available early in the document -->
 <!-- MODERN ACCOUNT LOGIN MODAL -->
